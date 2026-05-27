@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Gerencial - ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #334155; }
+        .admin-header { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 2.5rem 2rem 4rem 2rem; border-bottom: 4px solid #3b82f6; border-radius: 0 0 24px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .main-container { margin-top: -40px; position: relative; z-index: 10; padding: 0 20px;}
+        .card { border-radius: 16px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.04); transition: transform 0.3s ease, box-shadow 0.3s ease; background: #ffffff; margin-bottom: 25px; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(0,0,0,0.08); }
+        .nav-tabs { background: white; padding: 8px; border-radius: 14px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: inline-flex; gap: 5px; margin-bottom: 30px; }
+        .nav-tabs .nav-link { border: none; border-radius: 10px; color: #64748b; font-weight: 600; padding: 10px 20px; transition: all 0.3s ease; }
+        .nav-tabs .nav-link:hover { background: #f8fafc; color: #3b82f6; }
+        .nav-tabs .nav-link.active { background: #eff6ff; color: #2563eb; box-shadow: 0 2px 8px rgba(59,130,246,0.15); }
+        .table { --bs-table-bg: transparent; margin-bottom: 0; }
+        .table thead th { border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; padding-top: 0;}
+        .table tbody tr { transition: background 0.2s; border-bottom: 1px solid #f1f5f9; }
+        .table tbody tr:hover { background-color: #f8fafc !important; }
+        .table-container { max-height: 450px; overflow-y: auto; padding-right: 5px;}
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .form-control, .form-select { border-radius: 10px; border: 1px solid #cbd5e1; padding: 0.6rem 1rem; box-shadow: none; font-size: 0.9rem;}
+        .form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+        .btn { border-radius: 10px; font-weight: 600; transition: all 0.2s; }
+        .progress { border-radius: 20px; background-color: #e2e8f0; }
+        .badge { padding: 0.5em 0.8em; border-radius: 8px; font-weight: 600; letter-spacing: 0.3px; }
+        .accordion-item { border: 1px solid #e2e8f0; border-radius: 12px !important; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02);}
+        .accordion-button { font-weight: 600; color: #1e293b; background: white;}
+        .accordion-button:not(.collapsed) { background-color: #eff6ff; color: #2563eb; box-shadow: inset 0 -1px 0 rgba(0,0,0,.05); }
+        .accordion-button:focus { box-shadow: none; }
+        
+        /* Dashboard KPI Estilos Interactivos */
+        .kpi-card { border-left: 5px solid; padding-left: 1rem; cursor: pointer; user-select: none; }
+        .kpi-card:active { transform: scale(0.98); }
+        .kpi-pendiente { border-color: #64748b; }
+        .kpi-esperando { border-color: #f59e0b; }
+        .kpi-ejecucion { border-color: #3b82f6; }
+        .kpi-finalizado { border-color: #10b981; }
+        .kpi-dimmed { opacity: 0.4; transform: scale(0.98); box-shadow: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-header d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="mb-1 fw-bold">📊 Centro de Operaciones ERP</h2>
+            <p class="mb-0 text-light opacity-75 small">Panel de Control y Trazabilidad en Tiempo Real</p>
+        </div>
+        <div>
+            <select class="form-select bg-white text-dark border-0 fw-bold shadow-sm" id="vistaAdminRol" onchange="renderTablaProcesos()" style="cursor: pointer;">
+                <option value="COORDINADOR">👁️ Perfil: Coordinador (Autoriza)</option>
+                <option value="RECEPCIONISTA">👁️ Perfil: Recepción (Solo Creación)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="text-center text-lg-start">
+            <ul class="nav nav-tabs" id="modulosERP" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#operaciones" type="button" onclick="cargarTablas()">⚙️ Operaciones</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventario" type="button" onclick="cargarTablas()">📦 Inventario y Kardex</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#clientes" type="button" onclick="cargarTablas()">🏢 Directorio Clientes</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#equipo" type="button" onclick="cargarTablas()">👤 Gestión de Equipo</button></li>
+            </ul>
+        </div>
+
+        <div class="tab-content" id="modulosERPContent">
+            <div class="tab-pane fade show active" id="operaciones" role="tabpanel">
+                <div class="row g-3 mb-4">
+                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-pendiente" onclick="toggleFiltroEstado('PENDIENTE DIAGNÓSTICO', this)"><div class="text-muted small fw-bold text-uppercase mb-1">🛠️ Pendiente Diagnóstico</div><div class="fs-2 fw-bold text-dark" id="kpiPendiente">0</div></div></div>
+                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-esperando" onclick="toggleFiltroEstado('ESPERANDO APROBACIÓN', this)"><div class="text-muted small fw-bold text-uppercase mb-1">⏳ Esperando Aprobación</div><div class="fs-2 fw-bold text-dark" id="kpiAprobacion">0</div></div></div>
+                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-ejecucion" onclick="toggleFiltroEstado('APROBADO - EN EJECUCIÓN', this)"><div class="text-muted small fw-bold text-uppercase mb-1">⚙️ En Taller (Ejecución)</div><div class="fs-2 fw-bold text-primary" id="kpiEjecucion">0</div></div></div>
+                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-finalizado" onclick="toggleFiltroEstado('FINALIZADO', this)"><div class="text-muted small fw-bold text-uppercase mb-1">✔️ ODS Finalizadas</div><div class="fs-2 fw-bold text-success" id="kpiFinalizado">0</div></div></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-3">
+                        <div class="card p-4" style="border-top: 4px solid #0f172a;">
+                            <h6 class="fw-bold mb-3 text-dark">📝 Nueva Orden de Servicio</h6>
+                            <form id="formOrden">
+                                <div class="mb-3"><label class="form-label small fw-bold text-muted">Número ODS</label><input type="text" class="form-control" id="odsTarea" required></div>
+                                <div class="mb-3"><label class="form-label small fw-bold text-muted">Cliente Destino</label><select class="form-select" id="selectCliente" required></select></div>
+                                <div class="mb-3"><label class="form-label small fw-bold text-muted">Técnico Asignado</label><select class="form-select" id="selectTecnico" required></select></div>
+                                <div class="mb-4"><label class="form-label small fw-bold text-muted">Requerimiento Inicial</label><textarea class="form-control" id="descTarea" rows="2" required></textarea></div>
+                                <button type="submit" class="btn btn-dark w-100 shadow-sm">Generar y Asignar ODS</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-9">
+                        <div class="card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark mb-0">📡 Bitácora de Procesos</h6>
+                                <span id="etiquetaFiltro" class="badge bg-primary d-none" style="cursor:pointer;" onclick="toggleFiltroEstado(null, null)">Filtro Activo ✖</span>
+                            </div>
+                            <div class="table-container">
+                                <table class="table align-middle text-center">
+                                    <thead><tr><th>ODS</th><th>Requerimiento</th><th>Técnico</th><th>Tiempos (KPI)</th><th>Progreso</th><th>Estado</th><th>Acción Requerida</th></tr></thead>
+                                    <tbody id="tablaProcesos"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="inventario" role="tabpanel">
+                <div class="accordion" id="acordeonInventario">
+                    <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#colapsarStock">📊 Visor de Stock</button></h2><div id="colapsarStock" class="accordion-collapse collapse show" data-bs-parent="#acordeonInventario"><div class="accordion-body p-4"><table class="table align-middle"><thead><tr><th>Insumo</th><th>Cant. Disponible</th><th>Unidad</th><th>Alerta</th><th>Estado</th></tr></thead><tbody id="tablaInventario"></tbody></table></div></div></div>
+                    <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#colapsarIngresos">📥 Gestión de Ingresos</button></h2><div id="colapsarIngresos" class="accordion-collapse collapse" data-bs-parent="#acordeonInventario"><div class="accordion-body bg-light p-4"><div class="row g-4"><div class="col-lg-5"><div class="card p-4"><form id="formAbastecerItem"><select class="form-select mb-3" id="selectAbastecerItem" required></select><input type="number" class="form-control mb-3" id="cantAbastecer" required><button type="submit" class="btn btn-success w-100">Registrar Entrada</button></form></div><div class="card p-4"><form id="formItem"><input type="text" class="form-control mb-2" id="nombreItem" required><input type="number" class="form-control mb-2" id="cantItem" required><input type="text" class="form-control mb-2" id="medidaItem" required><input type="number" class="form-control mb-3" id="alertaItem" required><button type="submit" class="btn btn-dark w-100">Añadir al Catálogo</button></form></div></div><div class="col-lg-7"><div class="card p-4 h-100"><table class="table table-sm text-center"><thead><tr><th>Fecha</th><th>Repuesto</th><th>Cantidad</th></tr></thead><tbody id="tablaIngresos"></tbody></table></div></div></div></div></div></div>
+                    <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#colapsarSalidas">📤 Salidas y Kardex</button></h2><div id="colapsarSalidas" class="accordion-collapse collapse" data-bs-parent="#acordeonInventario"><div class="accordion-body bg-light p-4"><div class="row g-4"><div class="col-lg-4"><div class="card p-4"><form id="formSalidaManual"><select class="form-select mb-3" id="selSalidaRepuesto" required></select><input type="number" class="form-control mb-3" id="cantSalida" required><input type="text" class="form-control mb-3" id="motivoSalida" required><button type="submit" class="btn btn-danger w-100">Confirmar Salida</button></form></div></div><div class="col-lg-8"><div class="card p-4 h-100"><table class="table table-sm text-center"><thead><tr><th>ODS / Tipo</th><th>Cliente</th><th>Repuesto</th><th>Cant.</th><th>Destino</th></tr></thead><tbody id="tablaMovimientosCompleta"></tbody></table></div></div></div></div></div></div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="clientes" role="tabpanel"><div class="row g-4"><div class="col-lg-4"><div class="card p-4"><form id="formCliente"><input type="text" class="form-control mb-3" id="nombreCliente" placeholder="Razón Social" required><input type="text" class="form-control mb-4" id="nitCliente" placeholder="NIT" required><button type="submit" class="btn btn-warning w-100">Guardar</button></form></div></div><div class="col-lg-8"><div class="card p-4"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Razón Social</th><th>NIT</th></tr></thead><tbody id="tablaClientes"></tbody></table></div></div></div></div>
+            <div class="tab-pane fade" id="equipo" role="tabpanel"><div class="row g-4"><div class="col-lg-4"><div class="card p-4"><form id="formUsuario"><input type="text" class="form-control mb-3" id="nombreUsuario" placeholder="Nombre" required><select class="form-select mb-4" id="rolUsuario"><option value="TECNICO">Técnico de Campo</option><option value="ADMINISTRADOR">Administrativo</option></select><button type="submit" class="btn btn-primary w-100">Registrar</button></form></div></div><div class="col-lg-8"><div class="card p-4"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Nombre</th><th>Rol</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div></div></div></div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalVerDiagnostico" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 16px 16px 0 0;">
+                    <h5 class="modal-title fw-bold">📋 Análisis Técnico en Campo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0" id="cuerpoVerDiagnostico"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let procesosGlobales = [];
+        let estadoFiltroActivo = null;
+
+        async function cargarTablas() {
+            try {
+                const [resProc, resInv, resCli, resUsu, resIng, resMov, resMan] = await Promise.all([
+                    fetch('/procesos'), fetch('/inventario'), fetch('/clientes/'), fetch('/usuarios'),
+                    fetch('/inventario/ingresos'), fetch('/inventario/movimientos'), fetch('/inventario/salidas-manuales')
+                ]);
+                
+                procesosGlobales = await resProc.json();
+                const inventario = await resInv.json(); const clientes = await resCli.json(); const usuarios = await resUsu.json();
+                const ingresos = await resIng.json(); const movimientos = await resMov.json(); const manuales = await resMan.json();
+
+                let cPendiente = 0, cAprobacion = 0, cEjecucion = 0, cFinalizado = 0;
+                procesosGlobales.forEach(p => {
+                    if (p.estado === "PENDIENTE DIAGNÓSTICO") cPendiente++;
+                    else if (p.estado === "ESPERANDO APROBACIÓN") cAprobacion++;
+                    else if (p.estado === "APROBADO - EN EJECUCIÓN") cEjecucion++;
+                    else if (p.estado === "FINALIZADO") cFinalizado++;
+                });
+
+                document.getElementById('kpiPendiente').innerText = cPendiente;
+                document.getElementById('kpiAprobacion').innerText = cAprobacion;
+                document.getElementById('kpiEjecucion').innerText = cEjecucion;
+                document.getElementById('kpiFinalizado').innerText = cFinalizado;
+
+                renderTablaProcesos();
+
+                document.getElementById('selectCliente').innerHTML = '<option value="">Seleccione...</option>' + clientes.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('');
+                document.getElementById('tablaClientes').innerHTML = clientes.map(c => `<tr><td>#${c.id}</td><td class="fw-bold">${c.razon_social}</td><td>${c.nit}</td></tr>`).join('');
+                document.getElementById('selectTecnico').innerHTML = '<option value="">Seleccione...</option>' + usuarios.filter(u => u.rol === 'TECNICO').map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+                document.getElementById('tablaUsuarios').innerHTML = usuarios.map(u => `<tr><td>#${u.id}</td><td class="fw-bold">${u.nombre}</td><td>${u.rol}</td></tr>`).join('');
+                document.getElementById('tablaInventario').innerHTML = inventario.map(i => `<tr class="${i.cantidad_disponible <= i.stock_minimo_alerta ? 'table-danger' : ''}"><td><strong>${i.nombre_insumo}</strong></td><td><span class="fw-bold">${i.cantidad_disponible}</span></td><td>${i.unidad_medida}</td><td>${i.stock_minimo_alerta}</td><td>${i.cantidad_disponible <= i.stock_minimo_alerta ? '⚠️ CRÍTICO' : 'ÓPTIMO'}</td></tr>`).join('');
+                document.getElementById('selectAbastecerItem').innerHTML = '<option value="">Seleccione...</option>' + inventario.map(i => `<option value="${i.id}">${i.nombre_insumo}</option>`).join('');
+                document.getElementById('selSalidaRepuesto').innerHTML = '<option value="">Seleccione...</option>' + inventario.map(i => `<option value="${i.nombre_insumo}">${i.nombre_insumo}</option>`).join('');
+                document.getElementById('tablaIngresos').innerHTML = ingresos.map(i => `<tr><td>${i.fecha}</td><td class="fw-bold">${i.nombre_repuesto}</td><td class="text-success">+ ${i.cantidad}</td></tr>`).join('');
+                
+                let htmlMov = '';
+                movimientos.forEach(m => htmlMov += `<tr><td><span class="badge bg-dark">${m.ods}</span></td><td>${m.cliente}</td><td class="fw-bold">${m.repuesto}</td><td class="text-danger">- ${m.cantidad}</td><td>${m.destino}</td></tr>`);
+                manuales.forEach(m => htmlMov += `<tr><td><span class="badge bg-danger">Manual</span></td><td>N/A</td><td class="fw-bold">${m.nombre_repuesto}</td><td class="text-danger">- ${m.cantidad}</td><td>${m.motivo}</td></tr>`);
+                document.getElementById('tablaMovimientosCompleta').innerHTML = htmlMov;
+
+            } catch (e) { console.error(e); }
+        }
+
+        function toggleFiltroEstado(estadoSeleccionado, elementoHTML) {
+            const etiquetaFiltro = document.getElementById('etiquetaFiltro');
+            const tarjetasKpi = document.querySelectorAll('.kpi-card');
+
+            if (estadoFiltroActivo === estadoSeleccionado || estadoSeleccionado === null) {
+                estadoFiltroActivo = null;
+                etiquetaFiltro.classList.add('d-none');
+                tarjetasKpi.forEach(t => t.classList.remove('kpi-dimmed')); 
+            } else {
+                estadoFiltroActivo = estadoSeleccionado;
+                etiquetaFiltro.classList.remove('d-none');
+                etiquetaFiltro.innerText = `Filtro Activo: ${estadoSeleccionado} ✖`;
+                tarjetasKpi.forEach(t => { t === elementoHTML ? t.classList.remove('kpi-dimmed') : t.classList.add('kpi-dimmed'); });
+            }
+            renderTablaProcesos();
+        }
+
+        function renderTablaProcesos() {
+            const tablaProc = document.getElementById('tablaProcesos');
+            const perfilActual = document.getElementById('vistaAdminRol').value;
+            if (!tablaProc) return;
+
+            let procesosAMostrar = estadoFiltroActivo ? procesosGlobales.filter(p => p.estado === estadoFiltroActivo) : procesosGlobales;
+
+            const difHoras = (f1, f2) => {
+                if(!f1 || !f2) return '';
+                let d = (new Date(f2) - new Date(f1)) / 60000;
+                if(d < 60) return `${Math.round(d)} min`;
+                return `${Math.floor(d/60)}h ${Math.round(d%60)}m`;
+            };
+
+            tablaProc.innerHTML = procesosAMostrar.map(p => {
+                let badgeColor = "bg-secondary"; let botonAccion = "";
+                
+                if (p.estado === "PENDIENTE DIAGNÓSTICO") { badgeColor = "bg-secondary"; botonAccion = `<span class="text-muted fw-bold small">Técnico evaluando...</span>`; }
+                else if (p.estado === "ESPERANDO APROBACIÓN") { 
+                    badgeColor = "bg-warning text-dark"; 
+                    if (perfilActual === "COORDINADOR") { 
+                        botonAccion = `<button class="btn btn-sm btn-outline-info fw-bold mb-1 w-100" onclick="verDiagnostico(${p.id})">📄 Leer Reporte</button>
+                                       <button class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">✅ Autorizar Inicio</button>`; 
+                    } else { botonAccion = `<span class="text-warning small fw-bold">⏳ Bloqueo: Requiere Coordinador</span>`; }
+                }
+                else if (p.estado === "APROBADO - EN EJECUCIÓN") { badgeColor = "bg-primary"; botonAccion = `<span class="text-primary small fw-bold">⚙️ En taller activo...</span>`; }
+                else if (p.estado === "FINALIZADO") { badgeColor = "bg-success"; botonAccion = `<span class="badge bg-success shadow-sm">✔️ ODS Completada</span>`; }
+                
+                let htmlTiempos = `<div class="text-start" style="font-size: 0.75rem; line-height: 1.4;">
+                    <div class="fw-bold text-dark mb-1">📥 Ingresó: <span class="text-primary">${p.fecha_creacion ? p.fecha_creacion.substring(5,16) : 'N/A'}</span></div>`;
+                if(p.fecha_diagnostico) htmlTiempos += `<div class="text-muted">📝 Diag: <span class="fw-bold text-dark">+${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span></div>`;
+                if(p.fecha_aprobacion) htmlTiempos += `<div class="text-muted">✅ Aprob: <span class="fw-bold text-dark">+${difHoras(p.fecha_diagnostico, p.fecha_aprobacion)}</span></div>`;
+                if(p.fecha_finalizacion) htmlTiempos += `<div class="text-success mt-1 border-top pt-1">🏁 Cierre Total: <span class="fw-bold">${difHoras(p.fecha_creacion, p.fecha_finalizacion)}</span></div></div>`;
+
+                return `<tr><td><span class="badge bg-dark">#${p.ods || 'N/A'}</span></td><td><span class="small fw-bold text-muted">${p.tipo_tarea}</span></td><td><span class="fw-bold">${p.tecnico}</span><br><small class="text-muted">${p.cliente}</small></td><td>${htmlTiempos}</td><td class="align-middle" style="width: 15%;"><div class="progress shadow-sm" style="height:8px"><div class="progress-bar ${badgeColor}" style="width:${p.porcentaje_avance}%"></div></div></td><td><span class="badge ${badgeColor}">${p.estado}</span></td><td style="width: 20%;">${botonAccion}</td></tr>`;
+            }).join('') || `<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">No hay operaciones en este estado.</td></tr>`;
+        }
+
+        async function cambiarEstadoOds(id, accion) { await fetch(`/procesos/${id}/cambiar-estado?accion=${accion}`, { method: 'POST' }); cargarTablas(); }
+        
+        async function verDiagnostico(id) {
+            try {
+                const res = await fetch(`/procesos/${id}/diagnostico`); 
+                const diag = await res.json(); 
+                let contenido = '';
+                
+                if(diag.error) { 
+                    contenido = `<div class="p-4 text-center text-danger fw-bold">⚠️ El reporte no está disponible.</div>`; 
+                } else {
+                    contenido = `<div class="p-4 bg-white"><div class="row g-3 mb-3 text-center"><div class="col-6"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Tipo de Equipo</small><strong class="text-dark">${diag.tipo_equipo}</strong></div></div><div class="col-6"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Batería</small><strong class="text-primary">${diag.estado_bateria}</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Compresor</small><strong class="text-primary">${diag.estado_compresor}</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Tamiz</small><strong class="text-primary">${diag.estado_tamiz}</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Válvulas</small><strong class="text-primary">${diag.estado_valvulas}</strong></div></div></div><div class="mt-3"><small class="text-muted fw-bold ms-1">📝 Observaciones de Campo:</small><div class="p-3 bg-light border rounded mt-1 text-dark" style="font-size:0.95rem;">${diag.observaciones || 'No se registraron observaciones adicionales.'}</div></div></div>`;
+                }
+                
+                document.getElementById('cuerpoVerDiagnostico').innerHTML = contenido; 
+                
+                // Función que abre de forma segura sin congelar
+                const modalEl = document.getElementById('modalVerDiagnostico');
+                const modalInst = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modalInst.show();
+                
+            } catch (e) { console.error("Error:", e); }
+        }
+
+        document.getElementById('formOrden')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/procesos/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ods: document.getElementById('odsTarea').value, tipo_tarea: document.getElementById('descTarea').value, id_cliente: parseInt(document.getElementById('selectCliente').value), id_trabajador_asignado: parseInt(document.getElementById('selectTecnico').value) }) }); document.getElementById('formOrden').reset(); cargarTablas(); });
+        document.getElementById('formCliente')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/clientes/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ razon_social: document.getElementById('nombreCliente').value, nit: document.getElementById('nitCliente').value }) }); document.getElementById('formCliente').reset(); cargarTablas(); });
+        document.getElementById('formUsuario')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/usuarios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre: document.getElementById('nombreUsuario').value, rol: document.getElementById('rolUsuario').value }) }); document.getElementById('formUsuario').reset(); cargarTablas(); });
+        document.getElementById('formItem')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/inventario/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre_insumo: document.getElementById('nombreItem').value, cantidad_disponible: parseFloat(document.getElementById('cantItem').value), unidad_medida: document.getElementById('medidaItem').value, stock_minimo_alerta: parseFloat(document.getElementById('alertaItem').value) }) }); document.getElementById('formItem').reset(); cargarTablas(); });
+        document.getElementById('formAbastecerItem')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/${document.getElementById('selectAbastecerItem').value}/abastecer?cantidad=${document.getElementById('cantAbastecer').value}`, { method: 'POST' }); document.getElementById('formAbastecerItem').reset(); cargarTablas(); });
+        document.getElementById('formSalidaManual')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/salida-manual?nombre=${document.getElementById('selSalidaRepuesto').value}&cantidad=${document.getElementById('cantSalida').value}&motivo=${document.getElementById('motivoSalida').value}`, { method: 'POST' }); document.getElementById('formSalidaManual').reset(); cargarTablas(); });
+
+        window.onload = cargarTablas;
+    </script>
+</body>
+</html>

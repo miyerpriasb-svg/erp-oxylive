@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel del Técnico - ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        
+        /* Cabecera Técnica Vibrante */
+        .tech-header { 
+            background: linear-gradient(135deg, #2563eb, #3b82f6); 
+            color: white; padding: 2rem 2rem 3.5rem 2rem; 
+            border-radius: 0 0 24px 24px; 
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2); 
+        }
+        
+        .main-container { margin-top: -35px; position: relative; z-index: 10; padding: 0 15px;}
+        
+        .card { border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.05); background: #ffffff; }
+        .table-container { max-height: 550px; overflow-y: auto; padding-right: 5px;}
+        
+        /* Tablas */
+        .table { --bs-table-bg: transparent; }
+        .table thead th { border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+        .table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.2s;}
+        .table tbody tr:hover { background-color: #f8fafc; }
+        
+        /* Formularios y Botones Grandes (Mobile-friendly) */
+        .form-control, .form-select { border-radius: 12px; border: 1px solid #cbd5e1; padding: 0.7rem 1rem; }
+        .form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
+        .btn { border-radius: 12px; font-weight: 600; padding: 0.6rem 1.2rem; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        
+        /* Diseño Especial para Checkbox de Repuestos */
+        .repuesto-item { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; transition: border-color 0.2s;}
+        .repuesto-item:hover { border-color: #3b82f6; background-color: #eff6ff;}
+        .form-check-input:checked { background-color: #10b981; border-color: #10b981;}
+        
+        /* Progress bar suave */
+        .progress { border-radius: 20px; background-color: #e2e8f0; }
+        .badge { padding: 0.6em 0.9em; border-radius: 8px; font-weight: 600; }
+        
+        /* Acordeones limpios */
+        .accordion-item { border: 1px solid #e2e8f0; border-radius: 12px !important; margin-bottom: 15px; overflow: hidden; }
+        .accordion-button { font-weight: 600; color: #334155; }
+        .accordion-button:not(.collapsed) { background-color: #eff6ff; color: #2563eb; }
+        .accordion-button:focus { box-shadow: none; }
+    </style>
+</head>
+<body>
+
+    <div class="tech-header d-flex flex-column flex-md-row justify-content-between align-items-center">
+        <div class="text-center text-md-start mb-3 mb-md-0">
+            <h3 class="mb-1 fw-bold text-white">🛠️ App de Servicio Técnico</h3>
+            <p class="mb-0 text-white opacity-75 small">Evaluación y Ejecución de Mantenimiento en Campo</p>
+        </div>
+        <div style="min-width: 250px;">
+            <select class="form-select bg-white text-dark border-0 shadow-sm fw-bold" id="selectOperador" onchange="cargarOrdenesTecnico()" style="cursor: pointer;">
+                <option value="">👤 Seleccione su Perfil...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="card p-3 p-md-4">
+            <h5 class="fw-bold mb-4 text-dark"><span class="bg-light p-2 rounded text-primary me-2">📋</span>Mis Asignaciones de Trabajo</h5>
+            <div class="table-container">
+                <table class="table align-middle text-center">
+                    <thead><tr><th>ODS</th><th>Cliente Afectado</th><th>Problema Reportado</th><th>Progreso</th><th>Estado Actual</th><th>Acción a Tomar</th></tr></thead>
+                    <tbody id="tablaOrdenesTecnico">
+                        <tr><td colspan="6" class="text-center py-5 text-muted"><h6 class="fw-bold">Esperando autenticación</h6><p class="small">Por favor, seleccione su nombre en el menú superior para cargar sus órdenes activas.</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalTechDiagnostico" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header bg-dark text-white" style="border-radius: 16px 16px 0 0;">
+                    <h5 class="modal-title fw-bold">📝 Formulario de Inspección Técnica</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="limpiarFormulario()"></button>
+                </div>
+                <form id="formTechDiagnostico">
+                    <div class="modal-body p-4 bg-light">
+                        <input type="hidden" id="techOdsId">
+                        <div class="card p-3 mb-4 shadow-sm">
+                            <label class="form-label fw-bold text-primary mb-2">1. Seleccione la Arquitectura del Equipo:</label>
+                            <select class="form-select border-primary bg-white" id="techTipoEquipo" onchange="alternarSeccionesEquipo()" required>
+                                <option value="">Toca para elegir una opción...</option>
+                                <option value="Estacionario">🔌 Concentrador Estacionario (Ej: EverFlo)</option>
+                                <option value="Portatil">🔋 Concentrador Portátil (Ej: SimplyGo Mini)</option>
+                            </select>
+                        </div>
+
+                        <div class="accordion" id="acordeonDiagnostico" style="display: none;">
+                            <div class="accordion-item shadow-sm">
+                                <h2 class="accordion-header"><button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#secMecanica">⚙️ 2. Sistema Neumático y Mecánico</button></h2>
+                                <div id="secMecanica" class="accordion-collapse collapse show" data-bs-parent="#acordeonDiagnostico">
+                                    <div class="accordion-body row g-3 bg-white">
+                                        <div class="col-md-6"><label class="form-label small fw-bold text-muted">Compresor Principal</label><select class="form-select" id="techCompresor"><option value="Operativo">Operativo (Presión OK)</option><option value="Requiere Mantenimiento">Requiere Mantenimiento Preventivo</option><option value="Critico">Fallo Crítico / Cambio Obligatorio</option></select></div>
+                                        <div class="col-md-6"><label class="form-label small fw-bold text-muted">Bloque de Válvulas</label><select class="form-select" id="techValvulas"><option value="Operativas">Operativas / Conmutación Limpia</option><option value="Fallo Parcial">Fallo Parcial (Fugas/Ruidos)</option><option value="Atascada">Atascada / Bloqueo Total</option></select></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item shadow-sm" id="itemEstacionario">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed fw-bold text-success" type="button" data-bs-toggle="collapse" data-bs-target="#secPSA">🏢 3. Sistema PSA de Lechos (Estacionarios)</button></h2>
+                                <div id="secPSA" class="accordion-collapse collapse" data-bs-parent="#acordeonDiagnostico">
+                                    <div class="accordion-body bg-white"><label class="form-label small fw-bold text-muted">Concentración de O2 Medida</label><select class="form-select" id="techTamizEstacionario"><option value="Operativo">Óptima (> 90%)</option><option value="Baja Concentracion">Concentración Baja (< 85%)</option><option value="Requiere Recarga">Contaminado / Requiere Recarga Inmediata</option></select></div>
+                                </div>
+                            </div>
+                            <div class="accordion-item shadow-sm" id="itemPortatil">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed fw-bold text-warning" type="button" data-bs-toggle="collapse" data-bs-target="#secPortabilidad">🔋 3. Autonomía y Módulos (Portátiles)</button></h2>
+                                <div id="secPortabilidad" class="accordion-collapse collapse" data-bs-parent="#acordeonDiagnostico">
+                                    <div class="accordion-body row g-3 bg-white">
+                                        <div class="col-md-6"><label class="form-label small fw-bold text-muted">Salud de la Batería</label><select class="form-select" id="techBateria"><option value="Optima">Óptima / Retiene Carga Normal</option><option value="Degradada">Degradada / Requiere Sustitución</option><option value="No Detectada">Fallo de lectura en BMS / No detecta</option></select></div>
+                                        <div class="col-md-6"><label class="form-label small fw-bold text-muted">Cartuchos de Tamiz Intercambiables</label><select class="form-select" id="techTamizPortatil"><option value="Operativo">Módulos en Buen Estado</option><option value="Requiere Recarga">Requiere Reemplazo de Módulos (Alarma roja)</option></select></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4"><label class="form-label fw-bold text-dark">📝 Observaciones Adicionales de Campo</label><textarea class="form-control bg-white shadow-sm" id="techObs" rows="3" placeholder="Describe ruidos inusuales, daños estéticos o hallazgos no listados..."></textarea></div>
+                    </div>
+                    <div class="modal-footer bg-white border-top-0 pt-0"><button type="submit" class="btn btn-primary w-100 fw-bold py-3 shadow-sm fs-5">Transmitir a Coordinación</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalFinalizarTarea" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: 16px 16px 0 0;">
+                    <h5 class="modal-title fw-bold">⚙️ Confirmación de Cierre y Repuestos</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formFinalizarTarea">
+                    <div class="modal-body bg-light">
+                        <input type="hidden" id="techOdsIdFinalizar">
+                        <div class="alert alert-success bg-white border-success shadow-sm mb-3">
+                            <h6 class="fw-bold text-success mb-1">¡Buen trabajo! Has terminado la ejecución.</h6>
+                            <p class="small text-muted mb-0">Selecciona los repuestos que instalaste durante este servicio. El Kardex se descontará automáticamente al confirmar.</p>
+                        </div>
+                        <div id="listaRepuestosTech" style="max-height: 300px; overflow-y: auto;"></div>
+                    </div>
+                    <div class="modal-footer bg-white border-top-0"><button type="submit" class="btn btn-success w-100 fw-bold py-3 shadow-sm fs-5">✔️ Sellar ODS y Finalizar</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let modalTech, modalFinalizar; let repuestosGlobales = [];
+        async function inicializarPanel() {
+            try {
+                const res = await fetch('/usuarios'); const usuarios = await res.json(); const tecnicos = usuarios.filter(u => u.rol === 'TECNICO');
+                let selectHtml = '<option value="">👤 Seleccione su Perfil Operativo...</option>';
+                tecnicos.forEach(t => selectHtml += `<option value="${t.id}">${t.nombre}</option>`);
+                document.getElementById('selectOperador').innerHTML = selectHtml;
+                modalTech = new bootstrap.Modal(document.getElementById('modalTechDiagnostico'));
+                modalFinalizar = new bootstrap.Modal(document.getElementById('modalFinalizarTarea'));
+            } catch (e) { console.error(e); }
+        }
+
+        async function cargarOrdenesTecnico() {
+            const idTecnicoLogueado = parseInt(document.getElementById('selectOperador').value);
+            if (!idTecnicoLogueado) { document.getElementById('tablaOrdenesTecnico').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><h6 class="fw-bold">Esperando autenticación</h6><p class="small">Por favor, seleccione su nombre en el menú superior para cargar sus órdenes activas.</p></td></tr>'; return; }
+            try {
+                const [resProc, resInv] = await Promise.all([ fetch('/procesos'), fetch('/inventario') ]);
+                const procesos = await resProc.json(); repuestosGlobales = await resInv.json();
+                const misProcesos = procesos.filter(p => p.id_trabajador_asignado === idTecnicoLogueado);
+                document.getElementById('tablaOrdenesTecnico').innerHTML = misProcesos.map(p => {
+                    let badgeColor = "bg-secondary"; let botonAccion = "";
+                    if (p.estado === "PENDIENTE DIAGNÓSTICO") { badgeColor = "bg-secondary"; botonAccion = `<button class="btn btn-dark fw-bold shadow-sm" onclick="iniciarDiagnostico(${p.id})">📝 Iniciar Diagnóstico</button>`; } 
+                    else if (p.estado === "ESPERANDO APROBACIÓN") { badgeColor = "bg-warning text-dark"; botonAccion = `<span class="badge bg-light text-warning border border-warning px-3 py-2 fs-6">⏳ Pendiente de Coordinación</span>`; } 
+                    else if (p.estado === "APROBADO - EN EJECUCIÓN") { badgeColor = "bg-primary"; botonAccion = `<button class="btn btn-success fw-bold shadow-sm px-4" onclick="abrirChecklistFinal(${p.id})">⚙️ Registrar Cierre</button>`; } 
+                    else if (p.estado === "FINALIZADO") { badgeColor = "bg-success"; botonAccion = `<span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 fs-6">✔️ Labor Cumplida</span>`; }
+                    return `<tr><td><span class="badge bg-dark fs-6">#${p.ods}</span></td><td class="fw-bold text-secondary">${p.cliente}</td><td><span class="d-block text-truncate" style="max-width: 200px;" title="${p.tipo_tarea}">${p.tipo_tarea}</span></td><td class="align-middle" style="width:15%"><div class="progress shadow-sm" style="height:10px"><div class="progress-bar ${badgeColor}" style="width:${p.porcentaje_avance}%"></div></div></td><td><span class="badge ${badgeColor}">${p.estado}</span></td><td>${botonAccion}</td></tr>`;
+                }).join('') || '<tr><td colspan="6" class="text-center py-4 text-muted">No tienes órdenes activas asignadas hoy.</td></tr>';
+            } catch (e) { console.error(e); }
+        }
+
+        function iniciarDiagnostico(id) { document.getElementById('techOdsId').value = id; modalTech.show(); }
+        function alternarSeccionesEquipo() {
+            const tipo = document.getElementById('techTipoEquipo').value; const acordeon = document.getElementById('acordeonDiagnostico');
+            if (!tipo) { acordeon.style.display = "none"; return; }
+            acordeon.style.display = "block"; document.getElementById('itemEstacionario').style.display = (tipo === "Estacionario") ? "block" : "none"; document.getElementById('itemPortatil').style.display = (tipo === "Portatil") ? "block" : "none";
+        }
+
+        document.getElementById('formTechDiagnostico').addEventListener('submit', async (e) => {
+            e.preventDefault(); const id = document.getElementById('techOdsId').value; const tipo = document.getElementById('techTipoEquipo').value;
+            const tamizSeleccionado = (tipo === "Estacionario") ? document.getElementById('techTamizEstacionario').value : document.getElementById('techTamizPortatil').value;
+            const payload = { tipo_equipo: tipo, estado_compresor: document.getElementById('techCompresor').value, estado_tamiz: tamizSeleccionado, estado_valvulas: document.getElementById('techValvulas').value, estado_bateria: (tipo === "Portatil") ? document.getElementById('techBateria').value : "N/A", observaciones: document.getElementById('techObs').value };
+            await fetch(`/procesos/${id}/diagnosticar`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }); modalTech.hide(); limpiarFormulario(); cargarOrdenesTecnico();
+        });
+
+        function limpiarFormulario() { document.getElementById('formTechDiagnostico').reset(); document.getElementById('acordeonDiagnostico').style.display = "none"; }
+
+        function abrirChecklistFinal(id) {
+            document.getElementById('techOdsIdFinalizar').value = id; const contenedor = document.getElementById('listaRepuestosTech'); let htmlList = '';
+            repuestosGlobales.forEach(r => {
+                if(r.cantidad_disponible > 0) {
+                    htmlList += `<div class="repuesto-item mb-2 bg-white shadow-sm d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <input class="form-check-input chk-repuesto ms-2" type="checkbox" style="transform: scale(1.4);" value="${r.nombre_insumo}" id="chk_${r.id}">
+                            <label class="form-check-label fw-bold cursor-pointer" for="chk_${r.id}">${r.nombre_insumo} <br><small class="text-muted fw-normal">En Bodega: ${r.cantidad_disponible}</small></label>
+                        </div>
+                        <input type="number" class="form-control text-center cant-repuesto border-primary" style="width: 80px; font-weight:bold;" id="cant_${r.id}" min="0.1" max="${r.cantidad_disponible}" step="any" placeholder="Cant." disabled>
+                    </div>`;
+                }
+            });
+            contenedor.innerHTML = htmlList || '<div class="alert alert-warning text-center">No hay stock disponible en el inventario.</div>';
+            document.querySelectorAll('.chk-repuesto').forEach(chk => { chk.addEventListener('change', (e) => { const idNum = e.target.id.split('_')[1]; const inputCant = document.getElementById('cant_'+idNum); inputCant.disabled = !e.target.checked; if(e.target.checked) { inputCant.value = 1; inputCant.focus();} else { inputCant.value = ''; } }); });
+            modalFinalizar.show();
+        }
+
+        document.getElementById('formFinalizarTarea').addEventListener('submit', async (e) => {
+            e.preventDefault(); const id = document.getElementById('techOdsIdFinalizar').value; const repuestosUsados = [];
+            document.querySelectorAll('.chk-repuesto:checked').forEach(chk => { const idNum = chk.id.split('_')[1]; const cantidad = parseFloat(document.getElementById('cant_'+idNum).value); if(cantidad > 0) repuestosUsados.push({ nombre_insumo: chk.value, cantidad: cantidad }); });
+            await fetch(`/procesos/${id}/finalizar`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ repuestos: repuestosUsados }) }); modalFinalizar.hide(); document.getElementById('formFinalizarTarea').reset(); cargarOrdenesTecnico();
+        });
+
+        window.onload = inicializarPanel;
+    </script>
+</body>
+</html>

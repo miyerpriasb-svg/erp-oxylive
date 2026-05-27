@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Base de datos principal
+  db:
+    image: postgres:15-alpine
+    container_name: erp_database
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: erp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Cola de mensajes y caché
+  redis:
+    image: redis:alpine
+    container_name: erp_redis
+    ports:
+      - "6379:6379"
+
+  # Backend (Tu API)
+  api:
+    build: .
+    container_name: erp_backend
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/erp_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  pgdata:
