@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
@@ -6,17 +6,29 @@ from datetime import datetime, timedelta
 import models
 from database import get_db
 
-router = APIRouter(prefix="/procesos", tags=["Módulo de Operaciones"])
+router = APIRouter(prefix="/procesos", tags=["Modulo de Operaciones"])
+
 
 def hora_actual():
-    # Ajuste automático de zona horaria (UTC -5)
     return (datetime.utcnow() - timedelta(hours=5)).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def registrar_interaccion_cliente(db: Session, cliente_id: int, tipo: str, detalle: str):
+    if cliente_id:
+        db.add(models.InteraccionCliente(
+            cliente_id=cliente_id,
+            tipo=tipo,
+            detalle=detalle,
+            fecha=hora_actual(),
+        ))
+
 
 class ProcesoNuevo(BaseModel):
     ods: str
     tipo_tarea: str
     id_cliente: int
     id_trabajador_asignado: int
+
 
 class DiagnosticoData(BaseModel):
     tipo_equipo: str
@@ -26,12 +38,15 @@ class DiagnosticoData(BaseModel):
     estado_bateria: str
     observaciones: str
 
+
 class ParteUsada(BaseModel):
     nombre_insumo: str
     cantidad: float
 
+
 class FinalizarData(BaseModel):
     repuestos: List[ParteUsada]
+
 
 @router.get("/")
 def obtener_procesos(db: Session = Depends(get_db)):
@@ -41,7 +56,9 @@ def obtener_procesos(db: Session = Depends(get_db)):
         cliente = db.query(models.Cliente).filter(models.Cliente.id == p.id_cliente).first()
         tecnico = db.query(models.Usuario).filter(models.Usuario.id == p.id_trabajador_asignado).first()
         resultado.append({
-            "id": p.id, "ods": p.ods, "tipo_tarea": p.tipo_tarea,
+            "id": p.id,
+            "ods": p.ods,
+            "tipo_tarea": p.tipo_tarea,
             "cliente": cliente.razon_social if cliente else "N/A",
             "tecnico": tecnico.nombre if tecnico else "N/A",
             "id_trabajador_asignado": p.id_trabajador_asignado,
@@ -50,69 +67,91 @@ def obtener_procesos(db: Session = Depends(get_db)):
             "fecha_creacion": p.fecha_creacion,
             "fecha_diagnostico": p.fecha_diagnostico,
             "fecha_aprobacion": p.fecha_aprobacion,
-            "fecha_finalizacion": p.fecha_finalizacion
+            "fecha_finalizacion": p.fecha_finalizacion,
         })
     return resultado
+
 
 @router.post("/nuevo")
 def crear_proceso(proc: ProcesoNuevo, db: Session = Depends(get_db)):
     nuevo = models.Proceso(
-        ods=proc.ods, tipo_tarea=proc.tipo_tarea,
-        id_cliente=proc.id_cliente, id_trabajador_asignado=proc.id_trabajador_asignado,
-        estado="PENDIENTE DIAGNÓSTICO", porcentaje_avance=10,
-        fecha_creacion=hora_actual()
+        ods=proc.ods,
+        tipo_tarea=proc.tipo_tarea,
+        id_cliente=proc.id_cliente,
+        id_trabajador_asignado=proc.id_trabajador_asignado,
+        estado="PENDIENTE DIAGNÓSTICO",
+        porcentaje_avance=10,
+        fecha_creacion=hora_actual(),
     )
     db.add(nuevo)
+    registrar_interaccion_cliente(db, proc.id_cliente, "ODS creada", f"ODS {proc.ods}: {proc.tipo_tarea}")
     db.commit()
-    return {"mensaje": "ODS Creada exitosamente."}
+    return {"mensaje": "ODS creada exitosamente."}
+
 
 @router.post("/{ods_id}/diagnosticar")
 def diagnosticar_ods(ods_id: int, diag: DiagnosticoData, db: Session = Depends(get_db)):
     proceso = db.query(models.Proceso).filter(models.Proceso.id == ods_id).first()
+    if not proceso:
+        raise HTTPException(status_code=404, detail="ODS no encontrada")
     nuevo_diag = models.Diagnostico(
-        proceso_id=ods_id, tipo_equipo=diag.tipo_equipo,
-        estado_compresor=diag.estado_compresor, estado_tamiz=diag.estado_tamiz,
-        estado_valvulas=diag.estado_valvulas, estado_bateria=diag.estado_bateria,
-        observaciones=diag.observaciones
+        proceso_id=ods_id,
+        tipo_equipo=diag.tipo_equipo,
+        estado_compresor=diag.estado_compresor,
+        estado_tamiz=diag.estado_tamiz,
+        estado_valvulas=diag.estado_valvulas,
+        estado_bateria=diag.estado_bateria,
+        observaciones=diag.observaciones,
     )
     db.add(nuevo_diag)
+    registrar_interaccion_cliente(db, proceso.id_cliente, "Diagnostico", f"Diagnostico registrado para {proceso.ods}")
     proceso.estado = "ESPERANDO APROBACIÓN"
     proceso.porcentaje_avance = 30
     proceso.fecha_diagnostico = hora_actual()
     db.commit()
-    return {"mensaje": "Diagnóstico registrado."}
+    return {"mensaje": "Diagnostico registrado."}
+
 
 @router.post("/{ods_id}/cambiar-estado")
 def cambiar_estado(ods_id: int, accion: str, db: Session = Depends(get_db)):
     proceso = db.query(models.Proceso).filter(models.Proceso.id == ods_id).first()
+    if not proceso:
+        raise HTTPException(status_code=404, detail="ODS no encontrada")
     if accion == "aprobar":
         proceso.estado = "APROBADO - EN EJECUCIÓN"
         proceso.porcentaje_avance = 60
         proceso.fecha_aprobacion = hora_actual()
+        registrar_interaccion_cliente(db, proceso.id_cliente, "Aprobacion ODS", f"ODS {proceso.ods} aprobada")
         db.commit()
-    return {"mensaje": f"ODS actualizada"}
+    return {"mensaje": "ODS actualizada"}
+
 
 @router.post("/{ods_id}/finalizar")
 def finalizar_ods(ods_id: int, data: FinalizarData, db: Session = Depends(get_db)):
     proceso = db.query(models.Proceso).filter(models.Proceso.id == ods_id).first()
+    if not proceso:
+        raise HTTPException(status_code=404, detail="ODS no encontrada")
     for rep in data.repuestos:
         item = db.query(models.Inventario).filter(models.Inventario.nombre_insumo == rep.nombre_insumo).first()
         if item and item.cantidad_disponible >= rep.cantidad:
             item.cantidad_disponible -= rep.cantidad
-            nuevo_uso = models.RepuestoUtilizado(
-                proceso_id=ods_id, nombre_repuesto=rep.nombre_insumo,
-                cantidad=rep.cantidad, componente_destino="Finalización de ODS"
-            )
-            db.add(nuevo_uso)
-            
+            db.add(models.RepuestoUtilizado(
+                proceso_id=ods_id,
+                nombre_repuesto=rep.nombre_insumo,
+                cantidad=rep.cantidad,
+                componente_destino="Finalizacion de ODS",
+            ))
     proceso.estado = "FINALIZADO"
     proceso.porcentaje_avance = 100
     proceso.fecha_finalizacion = hora_actual()
+    registrar_interaccion_cliente(db, proceso.id_cliente, "Cierre ODS", f"ODS {proceso.ods} finalizada")
     db.commit()
-    return {"mensaje": "ODS Finalizada."}
+    return {"mensaje": "ODS finalizada."}
+
 
 @router.get("/{ods_id}/diagnostico")
 def obtener_diagnostico(ods_id: int, db: Session = Depends(get_db)):
     diag = db.query(models.Diagnostico).filter(models.Diagnostico.proceso_id == ods_id).order_by(models.Diagnostico.id.desc()).first()
-    if not diag: return {"error": "Diagnóstico no encontrado."}
+    if not diag:
+        return {"error": "Diagnostico no encontrado."}
     return diag

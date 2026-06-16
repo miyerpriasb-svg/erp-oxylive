@@ -3,9 +3,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import database, models
+import migrations
 from routers import auth, clientes, inventario, operaciones, usuarios
 
 models.Base.metadata.create_all(bind=database.engine)
+migrations.ensure_schema()
 
 app = FastAPI()
 

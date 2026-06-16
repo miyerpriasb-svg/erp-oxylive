@@ -5,13 +5,19 @@ class Usuario(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, index=True)
+    username = Column(String, index=True)
+    password = Column(String)
     rol = Column(String)
+    activo = Column(String, default="SI")
 
 class Cliente(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
     razon_social = Column(String, index=True)
     nit = Column(String, index=True)
+    tipo_cliente = Column(String)
+    correo = Column(String)
+    telefono = Column(String)
 
 class Inventario(Base):
     __tablename__ = "inventario"
@@ -81,3 +87,11 @@ class Diagnostico(Base):
     estado_valvulas = Column(String)
     estado_bateria = Column(String)
     observaciones = Column(String)
+
+class InteraccionCliente(Base):
+    __tablename__ = "interacciones_clientes"
+    id = Column(Integer, primary_key=True, index=True)
+    cliente_id = Column(Integer, index=True)
+    tipo = Column(String, index=True)
+    detalle = Column(String)
+    fecha = Column(String)

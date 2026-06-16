@@ -120,8 +120,68 @@
                     <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#colapsarSalidas">📤 Salidas y Kardex</button></h2><div id="colapsarSalidas" class="accordion-collapse collapse" data-bs-parent="#acordeonInventario"><div class="accordion-body bg-light p-4"><div class="row g-4"><div class="col-lg-4"><div class="card p-4"><form id="formSalidaManual"><select class="form-select mb-3" id="selSalidaRepuesto" required></select><input type="number" class="form-control mb-3" id="cantSalida" required><input type="text" class="form-control mb-3" id="motivoSalida" required><button type="submit" class="btn btn-danger w-100">Confirmar Salida</button></form></div></div><div class="col-lg-8"><div class="card p-4 h-100"><table class="table table-sm text-center"><thead><tr><th>ODS / Tipo</th><th>Cliente</th><th>Repuesto</th><th>Cant.</th><th>Destino</th></tr></thead><tbody id="tablaMovimientosCompleta"></tbody></table></div></div></div></div></div></div>
                 </div>
             </div>
-            <div class="tab-pane fade" id="clientes" role="tabpanel"><div class="row g-4"><div class="col-lg-4"><div class="card p-4"><form id="formCliente"><input type="text" class="form-control mb-3" id="nombreCliente" placeholder="Razón Social" required><input type="text" class="form-control mb-4" id="nitCliente" placeholder="NIT" required><button type="submit" class="btn btn-warning w-100">Guardar</button></form></div></div><div class="col-lg-8"><div class="card p-4"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Razón Social</th><th>NIT</th></tr></thead><tbody id="tablaClientes"></tbody></table></div></div></div></div>
-            <div class="tab-pane fade" id="equipo" role="tabpanel"><div class="row g-4"><div class="col-lg-4"><div class="card p-4"><form id="formUsuario"><input type="text" class="form-control mb-3" id="nombreUsuario" placeholder="Nombre" required><select class="form-select mb-4" id="rolUsuario"><option value="TECNICO">Técnico de Campo</option><option value="ADMINISTRADOR">Administrativo</option></select><button type="submit" class="btn btn-primary w-100">Registrar</button></form></div></div><div class="col-lg-8"><div class="card p-4"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Nombre</th><th>Rol</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div></div></div></div>
+            <div class="tab-pane fade" id="clientes" role="tabpanel">
+                <div class="row g-4 mb-4" id="crmKpis"></div>
+                <div class="row g-4">
+                    <div class="col-xl-4">
+                        <div class="card p-4">
+                            <h6 class="fw-bold mb-3 text-dark">Nuevo cliente</h6>
+                            <form id="formCliente">
+                                <input type="text" class="form-control mb-3" id="nombreCliente" placeholder="Razon social" required>
+                                <select class="form-select mb-3" id="tipoCliente" required><option value="Juridico">Juridico</option><option value="Natural">Natural</option></select>
+                                <input type="text" class="form-control mb-3" id="nitCliente" placeholder="NIT o identificacion" required>
+                                <input type="email" class="form-control mb-3" id="correoCliente" placeholder="Correo electronico">
+                                <input type="text" class="form-control mb-4" id="telefonoCliente" placeholder="Numero de contacto">
+                                <button type="submit" class="btn btn-warning w-100">Guardar cliente</button>
+                            </form>
+                        </div>
+                        <div class="card p-4 mt-3">
+                            <h6 class="fw-bold mb-3 text-dark">Registrar interaccion</h6>
+                            <form id="formInteraccionCliente">
+                                <select class="form-select mb-3" id="interaccionCliente" required></select>
+                                <select class="form-select mb-3" id="interaccionTipo" required><option>Seguimiento</option><option>Llamada</option><option>Correo</option><option>Visita</option><option>Soporte</option><option>Comercial</option></select>
+                                <textarea class="form-control mb-3" id="interaccionDetalle" rows="2" placeholder="Detalle de la interaccion"></textarea>
+                                <button type="submit" class="btn btn-dark w-100">Agregar interaccion</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-xl-8">
+                        <div class="card p-4 mb-3">
+                            <div class="row g-3">
+                                <div class="col-md-4"><input class="form-control" id="filtroClienteTexto" placeholder="Buscar cliente, NIT, correo" oninput="renderClientesCRM()"></div>
+                                <div class="col-md-4"><select class="form-select" id="filtroClienteTipo" onchange="renderClientesCRM()"><option value="">Todos los tipos</option><option>Natural</option><option>Juridico</option></select></div>
+                                <div class="col-md-4"><select class="form-select" id="filtroClienteSegmento" onchange="renderClientesCRM()"><option value="">Todos los segmentos</option><option>Nuevo</option><option>Esporadico</option><option>Frecuente</option></select></div>
+                            </div>
+                        </div>
+                        <div class="card p-4 mb-3">
+                            <h6 class="fw-bold mb-3 text-dark">Segmentacion en tiempo real</h6>
+                            <div id="crmGraficos" class="row g-3"></div>
+                        </div>
+                        <div class="card p-4">
+                            <div class="table-container"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Cliente</th><th>Tipo</th><th>Contacto</th><th>Interacciones</th><th>Segmento</th></tr></thead><tbody id="tablaClientes"></tbody></table></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="equipo" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="card p-4">
+                            <h6 class="fw-bold mb-3 text-dark">Nuevo usuario de personal</h6>
+                            <form id="formUsuario">
+                                <input type="text" class="form-control mb-3" id="nombreUsuario" placeholder="Nombre completo" required>
+                                <input type="text" class="form-control mb-3" id="loginUsuario" placeholder="Usuario de acceso" required>
+                                <input type="password" class="form-control mb-3" id="passwordUsuario" placeholder="Contrasena" required>
+                                <select class="form-select mb-4" id="rolUsuario"><option value="ADMINISTRATIVO">Administrativo</option><option value="OPERATIVO">Operativo</option><option value="COORDINADOR">Coordinador</option><option value="RECEPCIONISTA">Recepcionista</option></select>
+                                <button type="submit" class="btn btn-primary w-100">Registrar usuario</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="card p-4"><div class="table-container"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -142,6 +202,7 @@
     <script>
         const SESSION_KEY = 'oxyliveSession';
         let procesosGlobales = [];
+        let clientesCRM = [];
         let estadoFiltroActivo = null;
 
         function obtenerSesion() {
@@ -150,7 +211,7 @@
         }
 
         function rolEsTecnico(rol) {
-            return ['TECNICO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
+            return ['TECNICO', 'OPERATIVO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
         }
 
         function protegerAdmin() {
@@ -175,14 +236,14 @@
 
         async function cargarTablas() {
             try {
-                const [resProc, resInv, resCli, resUsu, resIng, resMov, resMan] = await Promise.all([
+                const [resProc, resInv, resCli, resUsu, resIng, resMov, resMan, resCrm] = await Promise.all([
                     fetch('/procesos'), fetch('/inventario'), fetch('/clientes/'), fetch('/usuarios'),
-                    fetch('/inventario/ingresos'), fetch('/inventario/movimientos'), fetch('/inventario/salidas-manuales')
+                    fetch('/inventario/ingresos'), fetch('/inventario/movimientos'), fetch('/inventario/salidas-manuales'), fetch('/clientes/crm/resumen')
                 ]);
                 
                 procesosGlobales = await resProc.json();
                 const inventario = await resInv.json(); const clientes = await resCli.json(); const usuarios = await resUsu.json();
-                const ingresos = await resIng.json(); const movimientos = await resMov.json(); const manuales = await resMan.json();
+                const ingresos = await resIng.json(); const movimientos = await resMov.json(); const manuales = await resMan.json(); const crm = await resCrm.json(); clientesCRM = crm.clientes || clientes;
 
                 let cPendiente = 0, cAprobacion = 0, cEjecucion = 0, cFinalizado = 0;
                 procesosGlobales.forEach(p => {
@@ -200,9 +261,9 @@
                 renderTablaProcesos();
 
                 document.getElementById('selectCliente').innerHTML = '<option value="">Seleccione...</option>' + clientes.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('');
-                document.getElementById('tablaClientes').innerHTML = clientes.map(c => `<tr><td>#${c.id}</td><td class="fw-bold">${c.razon_social}</td><td>${c.nit}</td></tr>`).join('');
-                document.getElementById('selectTecnico').innerHTML = '<option value="">Seleccione...</option>' + usuarios.filter(u => u.rol === 'TECNICO').map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
-                document.getElementById('tablaUsuarios').innerHTML = usuarios.map(u => `<tr><td>#${u.id}</td><td class="fw-bold">${u.nombre}</td><td>${u.rol}</td></tr>`).join('');
+                renderClientesCRM(crm);
+                document.getElementById('selectTecnico').innerHTML = '<option value="">Seleccione...</option>' + usuarios.filter(u => ['TECNICO','OPERATIVO','TRABAJADOR','TECNICO CAMPO','TECNICO TALLER'].includes((u.rol || '').toUpperCase())).map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+                document.getElementById('tablaUsuarios').innerHTML = usuarios.map(u => `<tr><td>#${u.id}</td><td class="fw-bold">${u.nombre}</td><td>${u.username || ''}</td><td>${u.rol}</td><td>${u.activo || 'SI'}</td></tr>`).join('');
                 document.getElementById('tablaInventario').innerHTML = inventario.map(i => `<tr class="${i.cantidad_disponible <= i.stock_minimo_alerta ? 'table-danger' : ''}"><td><strong>${i.nombre_insumo}</strong></td><td><span class="fw-bold">${i.cantidad_disponible}</span></td><td>${i.unidad_medida}</td><td>${i.stock_minimo_alerta}</td><td>${i.cantidad_disponible <= i.stock_minimo_alerta ? '⚠️ CRÍTICO' : 'ÓPTIMO'}</td></tr>`).join('');
                 document.getElementById('selectAbastecerItem').innerHTML = '<option value="">Seleccione...</option>' + inventario.map(i => `<option value="${i.id}">${i.nombre_insumo}</option>`).join('');
                 document.getElementById('selSalidaRepuesto').innerHTML = '<option value="">Seleccione...</option>' + inventario.map(i => `<option value="${i.nombre_insumo}">${i.nombre_insumo}</option>`).join('');
@@ -214,6 +275,33 @@
                 document.getElementById('tablaMovimientosCompleta').innerHTML = htmlMov;
 
             } catch (e) { console.error(e); }
+        }
+
+        function barraCRM(label, value, total) {
+            const pct = total ? Math.round((value / total) * 100) : 0;
+            return `<div class="col-md-6"><div class="border rounded p-3 bg-white"><div class="d-flex justify-content-between small fw-bold mb-2"><span>${label}</span><span>${value}</span></div><div class="progress"><div class="progress-bar bg-primary" style="width:${pct}%"></div></div></div></div>`;
+        }
+
+        function renderClientesCRM(crmData = null) {
+            const texto = (document.getElementById('filtroClienteTexto')?.value || '').toLowerCase();
+            const tipo = document.getElementById('filtroClienteTipo')?.value || '';
+            const segmento = document.getElementById('filtroClienteSegmento')?.value || '';
+            let lista = clientesCRM.filter(c => {
+                const matchTexto = !texto || `${c.razon_social} ${c.nit} ${c.correo} ${c.telefono}`.toLowerCase().includes(texto);
+                const matchTipo = !tipo || c.tipo_cliente === tipo;
+                const matchSegmento = !segmento || c.segmento === segmento;
+                return matchTexto && matchTipo && matchSegmento;
+            });
+            document.getElementById('tablaClientes').innerHTML = lista.map(c => `<tr><td>#${c.id}</td><td class="fw-bold text-start">${c.razon_social}<br><small class="text-muted">${c.nit}</small></td><td>${c.tipo_cliente}</td><td>${c.correo || 'N/A'}<br><small class="text-muted">${c.telefono || ''}</small></td><td><span class="badge bg-dark">${c.total_interacciones}</span></td><td><span class="badge ${c.segmento === 'Frecuente' ? 'bg-success' : c.segmento === 'Esporadico' ? 'bg-warning text-dark' : 'bg-secondary'}">${c.segmento}</span></td></tr>`).join('') || '<tr><td colspan="6" class="text-muted py-4">No hay clientes con estos filtros.</td></tr>';
+            document.getElementById('interaccionCliente').innerHTML = clientesCRM.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('');
+            if (crmData) {
+                document.getElementById('crmKpis').innerHTML = `<div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Clientes</div><div class="fs-2 fw-bold">${crmData.total_clientes}</div></div></div><div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Interacciones</div><div class="fs-2 fw-bold">${crmData.total_interacciones}</div></div></div><div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Frecuentes</div><div class="fs-2 fw-bold text-success">${crmData.por_segmento?.Frecuente || 0}</div></div></div><div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Esporadicos</div><div class="fs-2 fw-bold text-warning">${crmData.por_segmento?.Esporadico || 0}</div></div></div>`;
+                const totalSegmentos = Object.values(crmData.por_segmento || {}).reduce((a,b) => a + b, 0);
+                const totalTipos = Object.values(crmData.por_tipo_interaccion || {}).reduce((a,b) => a + b, 0);
+                const barrasSegmentos = Object.entries(crmData.por_segmento || {}).map(([k,v]) => barraCRM(`Segmento: ${k}`, v, totalSegmentos)).join('');
+                const barrasTipos = Object.entries(crmData.por_tipo_interaccion || {}).map(([k,v]) => barraCRM(`Interaccion: ${k}`, v, totalTipos)).join('');
+                document.getElementById('crmGraficos').innerHTML = barrasSegmentos + barrasTipos || '<div class="col-12 text-muted">Aun no hay datos para graficar.</div>';
+            }
         }
 
         function toggleFiltroEstado(estadoSeleccionado, elementoHTML) {
@@ -296,8 +384,9 @@
         }
 
         document.getElementById('formOrden')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/procesos/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ods: document.getElementById('odsTarea').value, tipo_tarea: document.getElementById('descTarea').value, id_cliente: parseInt(document.getElementById('selectCliente').value), id_trabajador_asignado: parseInt(document.getElementById('selectTecnico').value) }) }); document.getElementById('formOrden').reset(); cargarTablas(); });
-        document.getElementById('formCliente')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/clientes/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ razon_social: document.getElementById('nombreCliente').value, nit: document.getElementById('nitCliente').value }) }); document.getElementById('formCliente').reset(); cargarTablas(); });
-        document.getElementById('formUsuario')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/usuarios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre: document.getElementById('nombreUsuario').value, rol: document.getElementById('rolUsuario').value }) }); document.getElementById('formUsuario').reset(); cargarTablas(); });
+        document.getElementById('formCliente')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/clientes/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ razon_social: document.getElementById('nombreCliente').value, tipo_cliente: document.getElementById('tipoCliente').value, nit: document.getElementById('nitCliente').value, correo: document.getElementById('correoCliente').value, telefono: document.getElementById('telefonoCliente').value }) }); document.getElementById('formCliente').reset(); cargarTablas(); });
+        document.getElementById('formUsuario')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/usuarios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre: document.getElementById('nombreUsuario').value, username: document.getElementById('loginUsuario').value, password: document.getElementById('passwordUsuario').value, rol: document.getElementById('rolUsuario').value, activo: 'SI' }) }); document.getElementById('formUsuario').reset(); cargarTablas(); });
+        document.getElementById('formInteraccionCliente')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/clientes/${document.getElementById('interaccionCliente').value}/interacciones`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ tipo: document.getElementById('interaccionTipo').value, detalle: document.getElementById('interaccionDetalle').value }) }); document.getElementById('formInteraccionCliente').reset(); cargarTablas(); });
         document.getElementById('formItem')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/inventario/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre_insumo: document.getElementById('nombreItem').value, cantidad_disponible: parseFloat(document.getElementById('cantItem').value), unidad_medida: document.getElementById('medidaItem').value, stock_minimo_alerta: parseFloat(document.getElementById('alertaItem').value) }) }); document.getElementById('formItem').reset(); cargarTablas(); });
         document.getElementById('formAbastecerItem')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/${document.getElementById('selectAbastecerItem').value}/abastecer?cantidad=${document.getElementById('cantAbastecer').value}`, { method: 'POST' }); document.getElementById('formAbastecerItem').reset(); cargarTablas(); });
         document.getElementById('formSalidaManual')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/salida-manual?nombre=${document.getElementById('selSalidaRepuesto').value}&cantidad=${document.getElementById('cantSalida').value}&motivo=${document.getElementById('motivoSalida').value}`, { method: 'POST' }); document.getElementById('formSalidaManual').reset(); cargarTablas(); });
