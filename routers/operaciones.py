@@ -77,6 +77,7 @@ class DiagnosticoData(BaseModel):
     estado_bateria: str
     observaciones: str
     componentes: List[str] = Field(default_factory=list)
+    requerimiento_componente: Optional[str] = ""
 
 
 def ultimo_diagnostico(db: Session, proceso_id: int):
@@ -248,6 +249,8 @@ def diagnosticar_ods(ods_id: int, diag: DiagnosticoData, db: Session = Depends(g
     observaciones = diag.observaciones
     if componentes:
         observaciones = f"Componentes requeridos: {componentes}\n{observaciones}".strip()
+    if diag.requerimiento_componente:
+        observaciones = f"{observaciones}\nRequerimiento final del componente: {diag.requerimiento_componente}".strip()
     resumen_sub_ods = resumen_diagnosticos_sub_ods(db, proceso.id) if not proceso.parent_proceso_id else ""
     if resumen_sub_ods:
         observaciones = f"{observaciones}\n\nDiagnosticos especializados liberados:\n{resumen_sub_ods}".strip()

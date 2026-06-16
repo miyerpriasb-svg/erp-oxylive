@@ -151,6 +151,10 @@
                                     <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de o-rings"> Cambio de o-rings</label>
                                 </div>
                             </div>
+                            <div id="panelRequerimientoComponente" class="d-none mt-3">
+                                <label class="form-label" for="techReqComponente">Requerimiento final del componente</label>
+                                <textarea class="form-control" id="techReqComponente" rows="3" placeholder="Describe que necesita el componente para quedar apto: reparacion, cambio, recarga, prueba, prioridad o condicion de entrega."></textarea>
+                            </div>
                         </div>
                         <label class="form-label mt-3" for="techObs">Observaciones</label>
                         <textarea class="form-control" id="techObs" rows="4" placeholder="Hallazgos, accesorios, seriales, pruebas realizadas..."></textarea>
@@ -368,7 +372,9 @@
             $('panelDiagnosticoEquipo').classList.toggle('d-none', esSub);
             $('panelDiagnosticoCompresor').classList.toggle('d-none', !(esSub && esCompresor));
             $('panelDiagnosticoTamiz').classList.toggle('d-none', !(esSub && esTamiz));
+            $('panelRequerimientoComponente').classList.toggle('d-none', !esSub);
             document.querySelectorAll('.diag-componente').forEach(chk => chk.checked = false);
+            $('techReqComponente').value = '';
             document.querySelectorAll('.diag-compresor').forEach(el => el.classList.toggle('d-none', !esSub && esTamiz && !esCompresor));
             document.querySelectorAll('.diag-tamiz').forEach(el => el.classList.toggle('d-none', !esSub && esCompresor && !esTamiz));
             $('techCompresor').value = esTamiz && !esCompresor ? 'No aplica' : 'Operativo';
@@ -440,6 +446,7 @@
         function limpiarFormulario() {
             $('formTechDiagnostico').reset();
             document.querySelectorAll('.diag-componente').forEach(chk => chk.checked = false);
+            $('techReqComponente').value = '';
         }
 
         function componentesDiagnosticoSeleccionados() {
@@ -459,13 +466,19 @@
                 alert('Selecciona al menos un requerimiento para liberar el diagnostico especializado.');
                 return;
             }
+            const requerimientoComponente = $('techReqComponente').value.trim();
+            if (esSub && !requerimientoComponente) {
+                alert('Describe el requerimiento final del componente.');
+                return;
+            }
             const payload = {
                 estado_compresor: esSub ? (esCompresor ? 'Requiere intervencion' : 'No aplica') : $('techCompresor').value,
                 estado_tamiz: esSub ? (esTamiz ? 'Requiere intervencion' : 'No aplica') : $('techTamiz').value,
                 estado_valvulas: esSub ? 'No aplica' : $('techValvulas').value,
                 estado_bateria: esSub ? 'No aplica' : $('techBateria').value,
                 observaciones: $('techObs').value,
-                componentes
+                componentes,
+                requerimiento_componente: esSub ? requerimientoComponente : ''
             };
             const res = await fetch(`/procesos/${id}/diagnosticar`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
             if (!res.ok) {
