@@ -6,10 +6,10 @@ from database import get_db
 
 router = APIRouter(prefix="/auth", tags=["Acceso"])
 
-DEFAULT_PASSWORD = "oxylive123"
+DEFAULT_PASSWORD = "admin123"
 
 FALLBACK_USERS = {
-    "admin": {"id": 0, "nombre": "Administrador Oxylive", "rol": "ADMINISTRATIVO"},
+    "administrador": {"id": 0, "nombre": "Administrador Oxylive", "rol": "ADMINISTRADOR"},
 }
 
 

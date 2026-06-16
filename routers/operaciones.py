@@ -26,6 +26,11 @@ def registrar_interaccion_cliente(db: Session, cliente_id: int, tipo: str, detal
 class ProcesoNuevo(BaseModel):
     ods: str
     tipo_tarea: str
+    tipo_equipo: str = ""
+    marca_equipo: str = ""
+    modelo_equipo: str = ""
+    horas_ingreso: float = 0
+    modalidad_servicio: str = ""
     id_cliente: int
     id_trabajador_asignado: int
 
@@ -59,6 +64,11 @@ def obtener_procesos(db: Session = Depends(get_db)):
             "id": p.id,
             "ods": p.ods,
             "tipo_tarea": p.tipo_tarea,
+            "tipo_equipo": p.tipo_equipo or "",
+            "marca_equipo": p.marca_equipo or "",
+            "modelo_equipo": p.modelo_equipo or "",
+            "horas_ingreso": p.horas_ingreso or 0,
+            "modalidad_servicio": p.modalidad_servicio or "",
             "cliente": cliente.razon_social if cliente else "N/A",
             "tecnico": tecnico.nombre if tecnico else "N/A",
             "id_trabajador_asignado": p.id_trabajador_asignado,
@@ -77,6 +87,11 @@ def crear_proceso(proc: ProcesoNuevo, db: Session = Depends(get_db)):
     nuevo = models.Proceso(
         ods=proc.ods,
         tipo_tarea=proc.tipo_tarea,
+        tipo_equipo=proc.tipo_equipo,
+        marca_equipo=proc.marca_equipo,
+        modelo_equipo=proc.modelo_equipo,
+        horas_ingreso=proc.horas_ingreso,
+        modalidad_servicio=proc.modalidad_servicio,
         id_cliente=proc.id_cliente,
         id_trabajador_asignado=proc.id_trabajador_asignado,
         estado="PENDIENTE DIAGNÓSTICO",

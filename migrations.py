@@ -17,3 +17,8 @@ def ensure_schema():
         ensure_column(connection, "clientes", "tipo_cliente", "VARCHAR")
         ensure_column(connection, "clientes", "correo", "VARCHAR")
         ensure_column(connection, "clientes", "telefono", "VARCHAR")
+        ensure_column(connection, "procesos", "tipo_equipo", "VARCHAR")
+        ensure_column(connection, "procesos", "marca_equipo", "VARCHAR")
+        ensure_column(connection, "procesos", "modelo_equipo", "VARCHAR")
+        ensure_column(connection, "procesos", "horas_ingreso", "FLOAT")
+        ensure_column(connection, "procesos", "modalidad_servicio", "VARCHAR")

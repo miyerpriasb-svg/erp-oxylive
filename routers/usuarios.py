@@ -16,6 +16,14 @@ class UsuarioNuevo(BaseModel):
     activo: Optional[str] = "SI"
 
 
+class UsuarioActualizar(BaseModel):
+    nombre: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    rol: Optional[str] = None
+    activo: Optional[str] = None
+
+
 @router.get("/usuarios")
 def obtener_usuarios(db: Session = Depends(get_db)):
     usuarios = db.query(models.Usuario).order_by(models.Usuario.id.desc()).all()
@@ -47,3 +55,42 @@ def crear_usuario(user: UsuarioNuevo, db: Session = Depends(get_db)):
     db.add(nuevo)
     db.commit()
     return {"mensaje": f"Usuario {user.nombre} creado exitosamente."}
+
+
+@router.put("/usuarios/{usuario_id}")
+def actualizar_usuario(usuario_id: int, data: UsuarioActualizar, db: Session = Depends(get_db)):
+    user = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    if data.username:
+        username = data.username.strip().lower()
+        existe = db.query(models.Usuario).filter(
+            models.Usuario.username == username,
+            models.Usuario.id != usuario_id
+        ).first()
+        if existe:
+            raise HTTPException(status_code=400, detail="El usuario ya existe")
+        user.username = username
+
+    if data.nombre is not None:
+        user.nombre = data.nombre
+    if data.password:
+        user.password = data.password
+    if data.rol:
+        user.rol = data.rol
+    if data.activo:
+        user.activo = data.activo
+
+    db.commit()
+    return {"mensaje": "Usuario actualizado"}
+
+
+@router.post("/usuarios/{usuario_id}/estado")
+def cambiar_estado_usuario(usuario_id: int, activo: str, db: Session = Depends(get_db)):
+    user = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    user.activo = activo
+    db.commit()
+    return {"mensaje": "Estado actualizado"}
