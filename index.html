@@ -322,13 +322,13 @@
                 if (estado.includes('PENDIENTE')) {
                     accion = pendientesEspecialistas.length
                         ? '<span class="pill pill-amber">Esperando especialista</span>'
-                        : `<button class="btn btn-sm btn-dark" onclick="iniciarDiagnostico(${p.id})">${p.es_sub_ods ? 'Liberar diagnostico' : 'Diagnosticar'}</button>`;
+                        : `<button class="btn btn-sm btn-dark" onclick="iniciarDiagnostico(${p.id})">${p.es_sub_ods ? 'Adjuntar diagnostico' : 'Enviar diagnostico final'}</button>`;
                 } else if (estado.includes('ESPERANDO')) {
                     pill = 'pill-amber'; progress = 'bg-warning'; accion = '<span class="pill pill-amber">Coordinacion</span>';
                 } else if (estado.includes('APROBADO')) {
                     pill = 'pill-blue'; progress = 'bg-primary'; accion = `<button class="btn btn-sm btn-success" onclick="abrirChecklistFinal(${p.id})">Cerrar ODS</button>`;
                 } else if (estado.includes('LIBERADO')) {
-                    pill = 'pill-green'; progress = 'bg-success'; accion = '<span class="pill pill-green">Diagnostico liberado</span>';
+                    pill = 'pill-green'; progress = 'bg-success'; accion = '<span class="pill pill-green">Adjuntado a ODS madre</span>';
                 } else if (estado.includes('FINALIZADO')) {
                     pill = 'pill-green'; progress = 'bg-success'; accion = '<span class="pill pill-green">Finalizada</span>';
                 }
@@ -374,7 +374,7 @@
             $('techCompresor').value = esTamiz && !esCompresor ? 'No aplica' : 'Operativo';
             $('techValvulas').value = esTamiz && !esCompresor ? 'No aplica' : 'Operativas';
             $('techTamiz').value = esCompresor && !esTamiz ? 'No aplica' : 'Operativo';
-            $('btnEnviarDiagnostico').textContent = esSub ? 'Liberar diagnostico' : 'Enviar a coordinacion';
+            $('btnEnviarDiagnostico').textContent = esSub ? 'Adjuntar diagnostico a ODS madre' : 'Enviar diagnostico final a coordinacion';
         }
 
         function opcionesSubOdsPermitidas() {

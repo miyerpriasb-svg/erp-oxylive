@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -28,7 +28,7 @@ def roles_usuario(rol: str):
 
 
 def normalizar_estado(valor: str):
-    return (valor or "").upper().replace("Ó", "O").replace("Ã“", "O")
+    return (valor or "").upper().replace("Ã“", "O").replace("Ãƒâ€œ", "O")
 
 
 def buscar_tecnico_especialista(db: Session, rol_requerido: str, tecnico_id: Optional[int] = None):
@@ -85,12 +85,6 @@ def ultimo_diagnostico(db: Session, proceso_id: int):
 
 def sub_ods_pendientes_diagnostico(db: Session, proceso_id: int):
     sub_ods = db.query(models.Proceso).filter(models.Proceso.parent_proceso_id == proceso_id).all()
-    estados_liberados = {"DIAGNOSTICO LIBERADO", "DIAGNÓSTICO LIBERADO", "FINALIZADO"}
-    return [sub for sub in sub_ods if (sub.estado or "").upper() not in estados_liberados]
-
-
-def sub_ods_pendientes_diagnostico(db: Session, proceso_id: int):
-    sub_ods = db.query(models.Proceso).filter(models.Proceso.parent_proceso_id == proceso_id).all()
     pendientes = []
     for sub in sub_ods:
         estado = normalizar_estado(sub.estado)
@@ -126,6 +120,10 @@ def obtener_procesos(db: Session = Depends(get_db)):
         cliente = db.query(models.Cliente).filter(models.Cliente.id == p.id_cliente).first()
         tecnico = db.query(models.Usuario).filter(models.Usuario.id == p.id_trabajador_asignado).first()
         tamices = db.query(models.TamizOrden).filter(models.TamizOrden.proceso_id == p.id).all()
+        estado_visible = p.estado or "PENDIENTE DIAGNOSTICO"
+        avance_visible = p.porcentaje_avance or 10
+        if p.parent_proceso_id and "LIBERADO" in normalizar_estado(estado_visible):
+            avance_visible = 100
         resultado.append({
             "id": p.id,
             "ods": p.ods,
@@ -141,8 +139,8 @@ def obtener_procesos(db: Session = Depends(get_db)):
             "cliente": cliente.razon_social if cliente else "N/A",
             "tecnico": tecnico.nombre if tecnico else "N/A",
             "id_trabajador_asignado": p.id_trabajador_asignado,
-            "estado": p.estado or "PENDIENTE DIAGNÓSTICO",
-            "porcentaje_avance": p.porcentaje_avance or 10,
+            "estado": estado_visible,
+            "porcentaje_avance": avance_visible,
             "fecha_creacion": p.fecha_creacion,
             "fecha_diagnostico": p.fecha_diagnostico,
             "fecha_aprobacion": p.fecha_aprobacion,
@@ -174,7 +172,7 @@ def crear_proceso(proc: ProcesoNuevo, db: Session = Depends(get_db)):
         sub_ods_tipo="",
         id_cliente=proc.id_cliente,
         id_trabajador_asignado=proc.id_trabajador_asignado,
-        estado="PENDIENTE DIAGNÓSTICO",
+        estado="PENDIENTE DIAGNÃ“STICO",
         porcentaje_avance=10,
         fecha_creacion=hora_actual(),
     )
@@ -216,7 +214,7 @@ def crear_sub_ods(ods_id: int, sub: SubProcesoNuevo, db: Session = Depends(get_d
         sub_ods_tipo=sub.tipo_sub_ods,
         id_cliente=parent.id_cliente,
         id_trabajador_asignado=tecnico_destino.id if tecnico_destino else (sub.id_trabajador_asignado or parent.id_trabajador_asignado),
-        estado="PENDIENTE DIAGNÓSTICO",
+        estado="PENDIENTE DIAGNÃ“STICO",
         porcentaje_avance=10,
         fecha_creacion=hora_actual(),
     )
@@ -264,11 +262,11 @@ def diagnosticar_ods(ods_id: int, diag: DiagnosticoData, db: Session = Depends(g
     )
     db.add(nuevo_diag)
     registrar_interaccion_cliente(db, proceso.id_cliente, "Diagnostico", f"Diagnostico registrado para {proceso.ods}")
-    proceso.estado = "ESPERANDO APROBACIÓN"
+    proceso.estado = "ESPERANDO APROBACIÃ“N"
     proceso.porcentaje_avance = 30
     if proceso.parent_proceso_id:
         proceso.estado = "DIAGNOSTICO LIBERADO"
-        proceso.porcentaje_avance = 45
+        proceso.porcentaje_avance = 100
     proceso.fecha_diagnostico = hora_actual()
     db.commit()
     return {"mensaje": "Diagnostico registrado.", "estado": proceso.estado}
@@ -280,7 +278,7 @@ def cambiar_estado(ods_id: int, accion: str, db: Session = Depends(get_db)):
     if not proceso:
         raise HTTPException(status_code=404, detail="ODS no encontrada")
     if accion == "aprobar":
-        proceso.estado = "APROBADO - EN EJECUCIÓN"
+        proceso.estado = "APROBADO - EN EJECUCIÃ“N"
         proceso.porcentaje_avance = 60
         proceso.fecha_aprobacion = hora_actual()
         registrar_interaccion_cliente(db, proceso.id_cliente, "Aprobacion ODS", f"ODS {proceso.ods} aprobada")
@@ -332,3 +330,4 @@ def obtener_diagnostico(ods_id: int, db: Session = Depends(get_db)):
     if not diag:
         return {"error": "Diagnostico no encontrado."}
     return diag
+
