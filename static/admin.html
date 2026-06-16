@@ -88,8 +88,15 @@
                                 <div class="mb-3"><label class="form-label small fw-bold text-muted">Número ODS</label><input type="text" class="form-control" id="odsTarea" required></div>
                                 <div class="mb-3"><label class="form-label small fw-bold text-muted">Cliente Destino</label><select class="form-select" id="selectCliente" required></select></div>
                                 <div class="mb-3"><label class="form-label small fw-bold text-muted">Técnico Asignado</label><select class="form-select" id="selectTecnico" required></select></div>
-                                <div class="mb-4"><label class="form-label small fw-bold text-muted">Requerimiento Inicial</label><textarea class="form-control" id="descTarea" rows="2" required></textarea></div>
-                                <button type="submit" class="btn btn-dark w-100 shadow-sm">Generar y Asignar ODS</button>
+                                <div class="row g-2">
+                                    <div class="col-12"><label class="form-label small fw-bold text-muted">Tipo de equipo</label><select class="form-select" id="tipoEquipoOds" required><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select></div>
+                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Marca</label><input type="text" class="form-control" id="marcaEquipoOds" placeholder="Marca"></div>
+                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Modelo</label><input type="text" class="form-control" id="modeloEquipoOds" placeholder="Modelo"></div>
+                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Horas ingreso</label><input type="number" class="form-control" id="horasEquipoOds" min="0" step="0.1" value="0"></div>
+                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Servicio</label><select class="form-select" id="modalidadServicioOds"><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select></div>
+                                </div>
+                                <div class="mb-4 mt-3"><label class="form-label small fw-bold text-muted">Requerimiento inicial</label><textarea class="form-control" id="descTarea" rows="2" required></textarea></div>
+                                <button type="submit" class="btn btn-dark w-100 shadow-sm">Generar y asignar ODS</button>
                             </form>
                         </div>
                     </div>
@@ -97,7 +104,7 @@
                         <div class="card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold text-dark mb-0">📡 Bitácora de Procesos</h6>
-                                <span id="etiquetaFiltro" class="badge bg-primary d-none" style="cursor:pointer;" onclick="toggleFiltroEstado(null, null)">Filtro Activo ✖</span>
+                                <span id="etiquetaFiltro" class="badge bg-primary d-none" style="cursor:pointer;" onclick="toggleFiltroEstado(null, null)">Filtro activo ✖</span>
                             </div>
                             <div class="table-container">
                                 <table class="table align-middle text-center">
@@ -122,7 +129,7 @@
                 <div class="row g-4">
                     <div class="col-xl-4">
                         <div class="card p-4">
-                            <h6 class="fw-bold mb-3 text-dark">Nuevo cliente</h6>
+                            <h6 class="fw-bold mb-3 text-dark">Ventana de cliente</h6>
                             <form id="formCliente">
                                 <input type="text" class="form-control mb-3" id="nombreCliente" placeholder="Razon social" required>
                                 <select class="form-select mb-3" id="tipoCliente" required><option value="Juridico">Juridico</option><option value="Natural">Natural</option></select>
@@ -164,7 +171,7 @@
                 <div class="row g-4">
                     <div class="col-lg-4">
                         <div class="card p-4">
-                            <h6 class="fw-bold mb-3 text-dark">Nuevo usuario de personal</h6>
+                            <h6 class="fw-bold mb-3 text-dark">Panel administrador de usuarios</h6>
                             <form id="formUsuario">
                                 <input type="text" class="form-control mb-3" id="nombreUsuario" placeholder="Nombre completo" required>
                                 <input type="text" class="form-control mb-3" id="loginUsuario" placeholder="Usuario de acceso" required>
@@ -201,6 +208,7 @@
         let procesosGlobales = [];
         let clientesCRM = [];
         let inventarioGlobal = [];
+        let usuariosGlobales = [];
         let sesionActual = null;
         let estadoFiltroActivo = null;
 
@@ -220,6 +228,9 @@
             if (rolEsTecnico(sesion.rol)) { window.location.href = '/operativo'; return null; }
             document.getElementById('sessionAdminLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
             document.getElementById('vistaAdminRol').value = (sesion.rol || '').toUpperCase();
+            if ((sesion.rol || '').toUpperCase() !== 'ADMINISTRADOR') {
+                document.querySelector('[data-bs-target="#equipo"]')?.closest('.nav-item')?.classList.add('d-none');
+            }
             return sesion;
         }
 
@@ -232,145 +243,199 @@
             if (protegerAdmin()) cargarTablas();
         }
 
+        function limpiarTexto(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function normalizarTexto(valor) {
+            return String(valor || '')
+                .replaceAll('Ã“', 'O').replaceAll('Ã³', 'o').replaceAll('Ã', 'A').replaceAll('Ã¡', 'a')
+                .replaceAll('Ã‰', 'E').replaceAll('Ã©', 'e').replaceAll('Ã', 'I').replaceAll('Ã­', 'i')
+                .replaceAll('Ã‘', 'N').replaceAll('Ã±', 'n').replaceAll('Ãš', 'U').replaceAll('Ãº', 'u')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+        }
+
+        function normalizarEstado(estado) {
+            return normalizarTexto(estado);
+        }
+
+        function difHoras(inicio, fin) {
+            if (!inicio || !fin) return 'N/A';
+            const ms = new Date(fin.replace(' ', 'T')) - new Date(inicio.replace(' ', 'T'));
+            if (!Number.isFinite(ms)) return 'N/A';
+            const horas = Math.max(0, ms / 3600000);
+            return horas < 24 ? `${horas.toFixed(1)} h` : `${(horas / 24).toFixed(1)} d`;
+        }
+
         async function cargarTablas() {
             try {
                 const [resProc, resInv, resCli, resUsu, resIng, resMov, resMan, resCrm] = await Promise.all([
                     fetch('/procesos'), fetch('/inventario'), fetch('/clientes/'), fetch('/usuarios'),
                     fetch('/inventario/ingresos'), fetch('/inventario/movimientos'), fetch('/inventario/salidas-manuales'), fetch('/clientes/crm/resumen')
                 ]);
-                
+
                 procesosGlobales = await resProc.json();
-                const inventario = await resInv.json(); const clientes = await resCli.json(); const usuarios = await resUsu.json();
-                const ingresos = await resIng.json(); const movimientos = await resMov.json(); const manuales = await resMan.json(); const crm = await resCrm.json(); clientesCRM = crm.clientes || clientes;
+                const inventario = await resInv.json();
+                const clientes = await resCli.json();
+                const usuarios = await resUsu.json();
+                const ingresos = await resIng.json();
+                const movimientos = await resMov.json();
+                const manuales = await resMan.json();
+                const crm = await resCrm.json();
+
+                inventarioGlobal = inventario;
+                clientesCRM = crm.clientes || clientes;
+                usuariosGlobales = usuarios;
 
                 let cPendiente = 0, cAprobacion = 0, cEjecucion = 0, cFinalizado = 0;
                 procesosGlobales.forEach(p => {
-                    if (p.estado === "PENDIENTE DIAGNÓSTICO") cPendiente++;
-                    else if (p.estado === "ESPERANDO APROBACIÓN") cAprobacion++;
-                    else if (p.estado === "APROBADO - EN EJECUCIÓN") cEjecucion++;
-                    else if (p.estado === "FINALIZADO") cFinalizado++;
+                    const estadoNormal = normalizarEstado(p.estado);
+                    if (estadoNormal.includes('PENDIENTE')) cPendiente++;
+                    else if (estadoNormal.includes('ESPERANDO')) cAprobacion++;
+                    else if (estadoNormal.includes('APROBADO')) cEjecucion++;
+                    else if (estadoNormal.includes('FINALIZADO')) cFinalizado++;
                 });
-
                 document.getElementById('kpiPendiente').innerText = cPendiente;
                 document.getElementById('kpiAprobacion').innerText = cAprobacion;
                 document.getElementById('kpiEjecucion').innerText = cEjecucion;
                 document.getElementById('kpiFinalizado').innerText = cFinalizado;
 
+                document.getElementById('selectCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)} - ${limpiarTexto(c.nit)}</option>`).join('');
+                document.getElementById('interaccionCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)}</option>`).join('');
+                document.getElementById('selectTecnico').innerHTML = usuarios
+                    .filter(u => rolEsTecnico(u.rol) && (u.activo || 'SI') !== 'NO')
+                    .map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(u.rol)}</option>`).join('');
+
+                document.getElementById('tablaUsuarios').innerHTML = usuarios.map(u => {
+                    const activo = (u.activo || 'SI') !== 'NO';
+                    const botonEstado = activo
+                        ? `<button class="btn btn-sm btn-outline-warning" onclick="cambiarEstadoUsuario(${u.id}, 'NO')">Bajar</button>`
+                        : `<button class="btn btn-sm btn-outline-success" onclick="cambiarEstadoUsuario(${u.id}, 'SI')">Subir</button>`;
+                    return `<tr><td>${u.id}</td><td class="text-start fw-bold">${limpiarTexto(u.nombre)}</td><td>${limpiarTexto(u.username || '')}</td><td><span class="badge bg-dark">${limpiarTexto(u.rol)}</span></td><td><span class="badge ${activo ? 'bg-success' : 'bg-secondary'}">${activo ? 'Activo' : 'Inactivo'}</span></td><td><div class="d-flex gap-2 justify-content-center"><button class="btn btn-sm btn-outline-primary" onclick="editarUsuarioPorId(${u.id})">Editar</button>${botonEstado}</div></td></tr>`;
+                }).join('') || `<tr><td colspan="6" class="text-center text-muted py-4">No hay usuarios registrados.</td></tr>`;
+
+                document.getElementById('selectAbastecerItem').innerHTML = inventario.map(i => `<option value="${i.id}">${limpiarTexto(i.nombre_insumo)}</option>`).join('');
+                document.getElementById('selSalidaRepuesto').innerHTML = inventario.map(i => `<option value="${limpiarTexto(i.nombre_insumo)}">${limpiarTexto(i.nombre_insumo)} (${i.cantidad_disponible})</option>`).join('');
+                document.getElementById('tablaIngresos').innerHTML = ingresos.map(i => `<tr><td>${limpiarTexto(i.fecha || '')}</td><td class="text-start">${limpiarTexto(i.nombre_repuesto)}</td><td>${i.cantidad}</td></tr>`).join('');
+                document.getElementById('tablaMovimientosCompleta').innerHTML = [
+                    ...movimientos.map(m => ({ tipo: m.ods || 'ODS', cliente: m.cliente || '', repuesto: m.repuesto, cantidad: m.cantidad, destino: m.destino || '' })),
+                    ...manuales.map(m => ({ tipo: 'Manual', cliente: m.fecha || '', repuesto: m.nombre_repuesto, cantidad: m.cantidad, destino: m.motivo || '' }))
+                ].map(m => `<tr><td>${limpiarTexto(m.tipo)}</td><td>${limpiarTexto(m.cliente)}</td><td class="text-start fw-bold">${limpiarTexto(m.repuesto)}</td><td>${m.cantidad}</td><td>${limpiarTexto(m.destino)}</td></tr>`).join('');
+
                 renderTablaProcesos();
-
-                document.getElementById('selectCliente').innerHTML = '<option value="">Seleccione...</option>' + clientes.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('');
+                renderInventario();
                 renderClientesCRM(crm);
-                document.getElementById('selectTecnico').innerHTML = '<option value="">Seleccione...</option>' + usuarios.filter(u => ['TECNICO','OPERATIVO','TRABAJADOR','TECNICO CAMPO','TECNICO TALLER'].includes((u.rol || '').toUpperCase())).map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
-                document.getElementById('tablaUsuarios').innerHTML = usuarios.map(u => `<tr><td>#${u.id}</td><td class="fw-bold">${u.nombre}</td><td>${u.username || ''}</td><td>${u.rol}</td><td><span class="badge ${(u.activo || 'SI') === 'SI' ? 'bg-success' : 'bg-secondary'}">${u.activo || 'SI'}</span></td><td><button class="btn btn-sm btn-outline-primary me-1" onclick="editarUsuario(${u.id}, '${(u.nombre || '').replaceAll("'", '')}', '${u.username || ''}', '${u.rol || ''}', '${u.activo || 'SI'}')">Editar</button><button class="btn btn-sm btn-outline-secondary" onclick="cambiarEstadoUsuario(${u.id}, '${(u.activo || 'SI') === 'SI' ? 'NO' : 'SI'}')">${(u.activo || 'SI') === 'SI' ? 'Bajar' : 'Subir'}</button></td></tr>`).join('');
-                document.getElementById('tablaInventario').innerHTML = inventario.map(i => `<tr class="${i.cantidad_disponible <= i.stock_minimo_alerta ? 'table-danger' : ''}"><td><strong>${i.nombre_insumo}</strong></td><td><span class="fw-bold">${i.cantidad_disponible}</span></td><td>${i.unidad_medida}</td><td>${i.stock_minimo_alerta}</td><td>${i.cantidad_disponible <= i.stock_minimo_alerta ? '⚠️ CRÍTICO' : 'ÓPTIMO'}</td></tr>`).join('');
-                document.getElementById('selectAbastecerItem').innerHTML = '<option value="">Seleccione...</option>' + inventario.map(i => `<option value="${i.id}">${i.nombre_insumo}</option>`).join('');
-                document.getElementById('selSalidaRepuesto').innerHTML = '<option value="">Seleccione...</option>' + inventario.map(i => `<option value="${i.nombre_insumo}">${i.nombre_insumo}</option>`).join('');
-                document.getElementById('tablaIngresos').innerHTML = ingresos.map(i => `<tr><td>${i.fecha}</td><td class="fw-bold">${i.nombre_repuesto}</td><td class="text-success">+ ${i.cantidad}</td></tr>`).join('');
-                
-                let htmlMov = '';
-                movimientos.forEach(m => htmlMov += `<tr><td><span class="badge bg-dark">${m.ods}</span></td><td>${m.cliente}</td><td class="fw-bold">${m.repuesto}</td><td class="text-danger">- ${m.cantidad}</td><td>${m.destino}</td></tr>`);
-                manuales.forEach(m => htmlMov += `<tr><td><span class="badge bg-danger">Manual</span></td><td>N/A</td><td class="fw-bold">${m.nombre_repuesto}</td><td class="text-danger">- ${m.cantidad}</td><td>${m.motivo}</td></tr>`);
-                document.getElementById('tablaMovimientosCompleta').innerHTML = htmlMov;
-
-            } catch (e) { console.error(e); }
-        }
-
-        function renderInventario() {
-            const texto = (document.getElementById('filtroInventarioTexto')?.value || '').toLowerCase();
-            const estado = document.getElementById('filtroInventarioEstado')?.value || '';
-            const lista = inventarioGlobal.filter(i => {
-                const itemEstado = i.cantidad_disponible <= i.stock_minimo_alerta ? 'CRITICO' : 'OPTIMO';
-                return (!texto || `${i.nombre_insumo} ${i.unidad_medida}`.toLowerCase().includes(texto)) && (!estado || itemEstado === estado);
-            });
-            document.getElementById('tablaInventario').innerHTML = lista.map(i => {
-                const itemEstado = i.cantidad_disponible <= i.stock_minimo_alerta ? 'CRITICO' : 'OPTIMO';
-                return `<tr class="${itemEstado === 'CRITICO' ? 'table-danger' : ''}"><td><strong>${i.nombre_insumo}</strong></td><td><span class="fw-bold">${i.cantidad_disponible}</span></td><td>${i.unidad_medida}</td><td>${i.stock_minimo_alerta}</td><td><span class="badge ${itemEstado === 'CRITICO' ? 'bg-danger' : 'bg-success'}">${itemEstado}</span></td></tr>`;
-            }).join('') || '<tr><td colspan="5" class="text-muted py-4 text-center">No hay insumos con estos filtros.</td></tr>';
-        }
-
-        function barraCRM(label, value, total) {
-            const pct = total ? Math.round((value / total) * 100) : 0;
-            return `<div class="col-md-6"><div class="border rounded p-3 bg-white"><div class="d-flex justify-content-between small fw-bold mb-2"><span>${label}</span><span>${value}</span></div><div class="progress"><div class="progress-bar bg-primary" style="width:${pct}%"></div></div></div></div>`;
-        }
-
-        function renderClientesCRM(crmData = null) {
-            const texto = (document.getElementById('filtroClienteTexto')?.value || '').toLowerCase();
-            const tipo = document.getElementById('filtroClienteTipo')?.value || '';
-            const segmento = document.getElementById('filtroClienteSegmento')?.value || '';
-            let lista = clientesCRM.filter(c => {
-                const matchTexto = !texto || `${c.razon_social} ${c.nit} ${c.correo} ${c.telefono}`.toLowerCase().includes(texto);
-                const matchTipo = !tipo || c.tipo_cliente === tipo;
-                const matchSegmento = !segmento || c.segmento === segmento;
-                return matchTexto && matchTipo && matchSegmento;
-            });
-            document.getElementById('tablaClientes').innerHTML = lista.map(c => `<tr><td>#${c.id}</td><td class="fw-bold text-start">${c.razon_social}<br><small class="text-muted">${c.nit}</small></td><td>${c.tipo_cliente}</td><td>${c.correo || 'N/A'}<br><small class="text-muted">${c.telefono || ''}</small></td><td><span class="badge bg-dark">${c.total_interacciones}</span></td><td><span class="badge ${c.segmento === 'Frecuente' ? 'bg-success' : c.segmento === 'Esporadico' ? 'bg-warning text-dark' : 'bg-secondary'}">${c.segmento}</span></td></tr>`).join('') || '<tr><td colspan="6" class="text-muted py-4">No hay clientes con estos filtros.</td></tr>';
-            document.getElementById('interaccionCliente').innerHTML = clientesCRM.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('');
-            if (crmData) {
-                document.getElementById('crmKpis').innerHTML = `<div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Clientes</div><div class="fs-2 fw-bold">${crmData.total_clientes}</div></div></div><div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Interacciones</div><div class="fs-2 fw-bold">${crmData.total_interacciones}</div></div></div><div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Frecuentes</div><div class="fs-2 fw-bold text-success">${crmData.por_segmento?.Frecuente || 0}</div></div></div><div class="col-md-6 col-xl-3"><div class="card p-3"><div class="kpi-label">Esporadicos</div><div class="fs-2 fw-bold text-warning">${crmData.por_segmento?.Esporadico || 0}</div></div></div>`;
-                const totalSegmentos = Object.values(crmData.por_segmento || {}).reduce((a,b) => a + b, 0);
-                const totalTipos = Object.values(crmData.por_tipo_interaccion || {}).reduce((a,b) => a + b, 0);
-                const barrasSegmentos = Object.entries(crmData.por_segmento || {}).map(([k,v]) => barraCRM(`Frecuencia: ${k}`, v, totalSegmentos)).join('');
-                const barrasTipos = Object.entries(crmData.por_tipo_interaccion || {}).map(([k,v]) => barraCRM(`Interaccion: ${k}`, v, totalTipos)).join('');
-                document.getElementById('crmGraficos').innerHTML = barrasSegmentos + barrasTipos || '<div class="col-12 text-muted">Aun no hay datos para graficar.</div>';
+            } catch (e) {
+                console.error(e);
             }
-        }
-
-        function toggleFiltroEstado(estadoSeleccionado, elementoHTML) {
-            const etiquetaFiltro = document.getElementById('etiquetaFiltro');
-            const tarjetasKpi = document.querySelectorAll('.kpi-card');
-
-            if (estadoFiltroActivo === estadoSeleccionado || estadoSeleccionado === null) {
-                estadoFiltroActivo = null;
-                etiquetaFiltro.classList.add('d-none');
-                tarjetasKpi.forEach(t => t.classList.remove('kpi-dimmed')); 
-            } else {
-                estadoFiltroActivo = estadoSeleccionado;
-                etiquetaFiltro.classList.remove('d-none');
-                etiquetaFiltro.innerText = `Filtro Activo: ${estadoSeleccionado} ✖`;
-                tarjetasKpi.forEach(t => { t === elementoHTML ? t.classList.remove('kpi-dimmed') : t.classList.add('kpi-dimmed'); });
-            }
-            renderTablaProcesos();
         }
 
         function renderTablaProcesos() {
             const tablaProc = document.getElementById('tablaProcesos');
             const perfilActual = (sesionActual?.rol || document.getElementById('vistaAdminRol').value || '').toUpperCase();
-            if (!tablaProc) return;
-
-            let procesosAMostrar = estadoFiltroActivo ? procesosGlobales.filter(p => p.estado === estadoFiltroActivo) : procesosGlobales;
-
-            const difHoras = (f1, f2) => {
-                if(!f1 || !f2) return '';
-                let d = (new Date(f2) - new Date(f1)) / 60000;
-                if(d < 60) return `${Math.round(d)} min`;
-                return `${Math.floor(d/60)}h ${Math.round(d%60)}m`;
-            };
+            const filtro = normalizarEstado(estadoFiltroActivo);
+            const procesosAMostrar = filtro
+                ? procesosGlobales.filter(p => normalizarEstado(p.estado).includes(filtro.split(' ')[0]))
+                : procesosGlobales;
 
             tablaProc.innerHTML = procesosAMostrar.map(p => {
-                let badgeColor = "bg-secondary"; let botonAccion = "";
-                
-                if (p.estado === "PENDIENTE DIAGNÓSTICO") { badgeColor = "bg-secondary"; botonAccion = `<span class="text-muted fw-bold small">Técnico evaluando...</span>`; }
-                else if (p.estado === "ESPERANDO APROBACIÓN") { 
-                    badgeColor = "bg-warning text-dark"; 
-                    if (["COORDINADOR", "ADMINISTRADOR", "ADMINISTRATIVO"].includes(perfilActual)) { 
-                        botonAccion = `<button class="btn btn-sm btn-outline-info fw-bold mb-1 w-100" onclick="verDiagnostico(${p.id})">📄 Leer Reporte</button>
-                                       <button class="btn btn-sm btn-success fw-bold w-100 shadow-sm" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">✅ Autorizar Inicio</button>`; 
-                    } else { botonAccion = `<span class="text-warning small fw-bold">⏳ Bloqueo: Requiere Coordinador</span>`; }
-                }
-                else if (p.estado === "APROBADO - EN EJECUCIÓN") { badgeColor = "bg-primary"; botonAccion = `<span class="text-primary small fw-bold">⚙️ En taller activo...</span>`; }
-                else if (p.estado === "FINALIZADO") { badgeColor = "bg-success"; botonAccion = `<span class="badge bg-success shadow-sm">✔️ ODS Completada</span>`; }
-                
-                let htmlTiempos = `<div class="text-start" style="font-size: 0.75rem; line-height: 1.4;">
-                    <div class="fw-bold text-dark mb-1">📥 Ingresó: <span class="text-primary">${p.fecha_creacion ? p.fecha_creacion.substring(5,16) : 'N/A'}</span></div>`;
-                if(p.fecha_diagnostico) htmlTiempos += `<div class="text-muted">📝 Diag: <span class="fw-bold text-dark">+${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span></div>`;
-                if(p.fecha_aprobacion) htmlTiempos += `<div class="text-muted">✅ Aprob: <span class="fw-bold text-dark">+${difHoras(p.fecha_diagnostico, p.fecha_aprobacion)}</span></div>`;
-                if(p.fecha_finalizacion) htmlTiempos += `<div class="text-success mt-1 border-top pt-1">🏁 Cierre Total: <span class="fw-bold">${difHoras(p.fecha_creacion, p.fecha_finalizacion)}</span></div></div>`;
+                const estadoNormal = normalizarEstado(p.estado);
+                let badgeColor = 'bg-secondary';
+                let botonAccion = `<span class="text-muted fw-bold small">Tecnico evaluando</span>`;
 
-                return `<tr><td><span class="badge bg-dark">#${p.ods || 'N/A'}</span></td><td><span class="small fw-bold text-muted">${p.tipo_tarea}</span><br><small class="text-muted">${p.tipo_equipo || ''} ${p.marca_equipo || ''} ${p.modelo_equipo || ''} ? ${p.modalidad_servicio || ''} ? ${p.horas_ingreso || 0} h</small></td><td><span class="fw-bold">${p.tecnico}</span><br><small class="text-muted">${p.cliente}</small></td><td>${htmlTiempos}</td><td class="align-middle" style="width: 15%;"><div class="progress shadow-sm" style="height:8px"><div class="progress-bar ${badgeColor}" style="width:${p.porcentaje_avance}%"></div></div></td><td><span class="badge ${badgeColor}">${p.estado}</span></td><td style="width: 20%;">${botonAccion}</td></tr>`;
-            }).join('') || `<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">No hay operaciones en este estado.</td></tr>`;
+                if (estadoNormal.includes('ESPERANDO')) {
+                    badgeColor = 'bg-warning text-dark';
+                    if (['COORDINADOR', 'ADMINISTRADOR', 'ADMINISTRATIVO'].includes(perfilActual)) {
+                        botonAccion = `<button class="btn btn-sm btn-outline-info fw-bold mb-1 w-100" onclick="verDiagnostico(${p.id})">Leer reporte</button><button class="btn btn-sm btn-success fw-bold w-100" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar inicio</button>`;
+                    } else {
+                        botonAccion = `<span class="text-warning small fw-bold">Requiere coordinador</span>`;
+                    }
+                } else if (estadoNormal.includes('APROBADO')) {
+                    badgeColor = 'bg-primary';
+                    botonAccion = `<span class="text-primary small fw-bold">En taller activo</span>`;
+                } else if (estadoNormal.includes('FINALIZADO')) {
+                    badgeColor = 'bg-success';
+                    botonAccion = `<span class="badge bg-success">ODS completada</span>`;
+                }
+
+                if (perfilActual === 'ADMINISTRADOR') {
+                    botonAccion += `<button class="btn btn-sm btn-outline-danger fw-bold mt-1 w-100" onclick="eliminarOds(${p.id})">Eliminar ODS</button>`;
+                }
+
+                let htmlTiempos = `<div class="metric-time text-start"><strong>Ingreso:</strong> ${limpiarTexto(p.fecha_creacion || 'N/A')}`;
+                if (p.fecha_diagnostico) htmlTiempos += `<br><span>Diagnostico: +${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span>`;
+                if (p.fecha_aprobacion) htmlTiempos += `<br><span>Aprobacion: +${difHoras(p.fecha_diagnostico, p.fecha_aprobacion)}</span>`;
+                if (p.fecha_finalizacion) htmlTiempos += `<br><strong>Cierre total:</strong> ${difHoras(p.fecha_creacion, p.fecha_finalizacion)}`;
+                htmlTiempos += `</div>`;
+
+                return `<tr><td><span class="badge bg-dark">#${limpiarTexto(p.ods || 'N/A')}</span></td><td class="text-start"><span class="fw-bold">${limpiarTexto(p.tipo_tarea)}</span><br><small class="text-muted">${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')} - ${limpiarTexto(p.modalidad_servicio || '')} - ${p.horas_ingreso || 0} h</small></td><td><span class="fw-bold">${limpiarTexto(p.tecnico)}</span><br><small class="text-muted">${limpiarTexto(p.cliente)}</small></td><td>${htmlTiempos}</td><td class="align-middle" style="width: 15%;"><div class="progress"><div class="progress-bar ${badgeColor}" style="width:${p.porcentaje_avance || 0}%"></div></div></td><td><span class="badge ${badgeColor}">${limpiarTexto(p.estado)}</span></td><td style="width: 20%;">${botonAccion}</td></tr>`;
+            }).join('') || `<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">No hay operaciones para mostrar.</td></tr>`;
+        }
+
+        function toggleFiltroEstado(estado, elemento) {
+            estadoFiltroActivo = estadoFiltroActivo === estado ? null : estado;
+            document.querySelectorAll('.kpi-card').forEach(k => k.classList.toggle('kpi-dimmed', estadoFiltroActivo && k !== elemento));
+            const etiqueta = document.getElementById('etiquetaFiltro');
+            etiqueta.classList.toggle('d-none', !estadoFiltroActivo);
+            etiqueta.innerText = estadoFiltroActivo ? `Filtro activo: ${estadoFiltroActivo} x` : 'Filtro activo x';
+            renderTablaProcesos();
+        }
+
+        function barraCRM(label, valor, total) {
+            const porcentaje = total ? Math.round((valor / total) * 100) : 0;
+            return `<div class="col-md-6"><div class="window-strip"><div class="d-flex justify-content-between small fw-bold"><span>${limpiarTexto(label)}</span><span>${valor}</span></div><div class="progress mt-2"><div class="progress-bar bg-info" style="width:${porcentaje}%"></div></div></div></div>`;
+        }
+
+        function renderClientesCRM(crmData = null) {
+            const data = crmData || { clientes: clientesCRM };
+            const texto = normalizarTexto(document.getElementById('filtroClienteTexto')?.value || '');
+            const tipo = document.getElementById('filtroClienteTipo')?.value || '';
+            const frecuencia = document.getElementById('filtroClienteSegmento')?.value || '';
+            const clientes = (data.clientes || clientesCRM).filter(c => {
+                const coincideTexto = !texto || normalizarTexto(`${c.razon_social} ${c.nit} ${c.correo}`).includes(texto);
+                const coincideTipo = !tipo || c.tipo_cliente === tipo;
+                const coincideFrecuencia = !frecuencia || c.segmento === frecuencia;
+                return coincideTexto && coincideTipo && coincideFrecuencia;
+            });
+
+            const totalInteracciones = clientes.reduce((sum, c) => sum + (c.total_interacciones || 0), 0);
+            document.getElementById('crmKpis').innerHTML = [
+                ['Clientes visibles', clientes.length],
+                ['Interacciones', totalInteracciones],
+                ['Frecuentes', clientes.filter(c => c.segmento === 'Frecuente').length],
+                ['Nuevos', clientes.filter(c => c.segmento === 'Nuevo').length],
+            ].map(([label, value]) => `<div class="col-xl-3 col-sm-6"><div class="card p-3 h-100 kpi-card"><div class="text-muted small fw-bold text-uppercase">${label}</div><div class="fs-2 fw-bold text-dark">${value}</div></div></div>`).join('');
+
+            const tiposInteraccion = {};
+            clientes.forEach(c => Object.entries(c.tipos_interaccion || {}).forEach(([k, v]) => tiposInteraccion[k] = (tiposInteraccion[k] || 0) + v));
+            document.getElementById('crmGraficos').innerHTML = Object.entries(tiposInteraccion).map(([k, v]) => barraCRM(k, v, totalInteracciones)).join('') || `<div class="col-12 text-muted small">No hay interacciones con estos filtros.</div>`;
+            document.getElementById('tablaClientes').innerHTML = clientes.map(c => `<tr><td>${c.id}</td><td class="text-start fw-bold">${limpiarTexto(c.razon_social)}<br><small class="text-muted">${limpiarTexto(c.nit)}</small></td><td>${limpiarTexto(c.tipo_cliente)}</td><td>${limpiarTexto(c.correo)}<br><small>${limpiarTexto(c.telefono)}</small></td><td>${c.total_interacciones || 0}</td><td><span class="badge bg-dark">${limpiarTexto(c.segmento)}</span></td></tr>`).join('') || `<tr><td colspan="6" class="text-center text-muted py-4">No hay clientes con estos filtros.</td></tr>`;
+        }
+
+        function renderInventario() {
+            const texto = normalizarTexto(document.getElementById('filtroInventarioTexto')?.value || '');
+            const estado = document.getElementById('filtroInventarioEstado')?.value || '';
+            const items = inventarioGlobal.filter(i => {
+                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
+                const estadoItem = critico ? 'CRITICO' : 'OPTIMO';
+                return (!texto || normalizarTexto(i.nombre_insumo).includes(texto)) && (!estado || estadoItem === estado);
+            });
+            document.getElementById('tablaInventario').innerHTML = items.map(i => {
+                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
+                return `<tr><td class="text-start fw-bold">${limpiarTexto(i.nombre_insumo)}</td><td>${i.cantidad_disponible}</td><td>${limpiarTexto(i.unidad_medida)}</td><td>${i.stock_minimo_alerta}</td><td><span class="badge ${critico ? 'bg-danger' : 'bg-success'}">${critico ? 'CRITICO' : 'OPTIMO'}</span></td></tr>`;
+            }).join('') || `<tr><td colspan="5" class="text-center text-muted py-4">No hay insumos con estos filtros.</td></tr>`;
         }
 
         async function cambiarEstadoOds(id, accion) { await fetch(`/procesos/${id}/cambiar-estado?accion=${accion}`, { method: 'POST' }); cargarTablas(); }
+
+        async function eliminarOds(id) {
+            const rol = (sesionActual?.rol || '').toUpperCase();
+            if (rol !== 'ADMINISTRADOR') { alert('Solo el administrador puede eliminar ODS.'); return; }
+            if (!confirm('Esta accion eliminara la ODS de la bitacora. Deseas continuar?')) return;
+            const res = await fetch(`/procesos/${id}?rol=${rol}`, { method: 'DELETE' });
+            if (!res.ok) { alert('No fue posible eliminar la ODS.'); return; }
+            cargarTablas();
+        }
         
         async function verDiagnostico(id) {
             try {
@@ -392,6 +457,12 @@
                 modalInst.show();
                 
             } catch (e) { console.error("Error:", e); }
+        }
+
+        function editarUsuarioPorId(id) {
+            const usuario = usuariosGlobales.find(u => u.id === id);
+            if (!usuario) return;
+            editarUsuario(id, usuario.nombre, usuario.username || '', usuario.rol, usuario.activo || 'SI');
         }
 
         function editarUsuario(id, nombre, username, rol, activo) {

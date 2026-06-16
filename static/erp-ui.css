@@ -275,3 +275,183 @@ body {
         padding-inline: 0.75rem !important;
     }
 }
+
+/* Workspace redesign: pane/window style instead of card UI */
+body {
+    background: #edf2f5 !important;
+}
+
+.admin-header,
+.tech-header {
+    border-radius: 0 !important;
+    padding: 1.2rem 1.6rem 3.8rem !important;
+    background: linear-gradient(135deg, #12212a, #005e67) !important;
+}
+
+.main-container {
+    margin-top: -2.5rem !important;
+    padding: 0 1rem 2rem !important;
+}
+
+.nav-tabs {
+    display: flex !important;
+    width: 100%;
+    border-radius: 6px !important;
+    border: 1px solid #cfd9df !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-bottom: 1rem !important;
+}
+
+.nav-tabs .nav-item {
+    flex: 1 1 auto;
+}
+
+.nav-tabs .nav-link {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 0 !important;
+    border-right: 1px solid #e4ebef !important;
+    color: #42515d !important;
+    background: #ffffff !important;
+}
+
+.nav-tabs .nav-link.active {
+    background: #0f5962 !important;
+    color: #ffffff !important;
+}
+
+.tab-content,
+.accordion,
+.row.g-4,
+.row.g-3 {
+    --bs-gutter-x: 0.85rem;
+    --bs-gutter-y: 0.85rem;
+}
+
+.card,
+.accordion-item,
+.modal-content {
+    border: 1px solid #cfd9df !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+}
+
+.card {
+    margin-bottom: 0.85rem !important;
+}
+
+.card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.card.p-3,
+.card.p-4 {
+    padding: 1rem !important;
+}
+
+.card h5,
+.card h6,
+.accordion-button {
+    color: #17242d !important;
+}
+
+.kpi-card {
+    min-height: 94px !important;
+    border-left: 0 !important;
+    border-top: 4px solid #6c7a86 !important;
+    cursor: pointer;
+}
+
+.kpi-pendiente { border-top-color: #64748b !important; }
+.kpi-esperando { border-top-color: #b7791f !important; }
+.kpi-ejecucion { border-top-color: #2f6fa8 !important; }
+.kpi-finalizado { border-top-color: #1f8a5b !important; }
+
+.table-container {
+    border: 1px solid #d7e0e5 !important;
+    border-radius: 6px !important;
+    background: #ffffff;
+    overflow: auto;
+}
+
+.table {
+    margin-bottom: 0 !important;
+}
+
+.table thead th {
+    background: #f3f6f8 !important;
+    color: #53626e !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0 !important;
+}
+
+.table tbody tr:hover {
+    background: #f7fafb !important;
+}
+
+.accordion-button {
+    background: #f9fbfc !important;
+    border-radius: 0 !important;
+}
+
+.accordion-button:not(.collapsed) {
+    background: #e9f2f3 !important;
+    color: #005e67 !important;
+}
+
+.form-control,
+.form-select {
+    border-radius: 5px !important;
+}
+
+.btn {
+    border-radius: 5px !important;
+}
+
+#clientes .card,
+#equipo .card,
+#inventario .card {
+    border-radius: 6px !important;
+}
+
+#crmKpis .card {
+    background: #f9fbfc !important;
+}
+
+.window-strip {
+    min-height: 66px;
+    border: 1px solid #d7e0e5;
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 0.85rem;
+}
+
+#operaciones .card,
+#clientes .card,
+#equipo .card,
+#inventario .card {
+    border-top: 3px solid #0f5962 !important;
+}
+
+#operaciones .kpi-card,
+#clientes .kpi-card {
+    border-top-width: 4px !important;
+}
+
+.tab-pane > .row,
+.accordion-body > .row {
+    align-items: stretch;
+}
+
+.accordion-body.bg-light {
+    background: #f6f9fa !important;
+}
+
+.login-layout .login-panel,
+.login-layout .login-visual {
+    border-radius: 0 !important;
+}

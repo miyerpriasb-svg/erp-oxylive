@@ -52,21 +52,11 @@
             margin-bottom: 1.2rem;
         }
 
-        .demo-access {
-            display: grid;
-            gap: 0.55rem;
+        .login-note {
             margin-top: 1rem;
             color: var(--ox-muted);
             font-size: 0.84rem;
-        }
-
-        .demo-access button {
-            border: 1px solid var(--ox-line);
-            border-radius: 7px;
-            background: #ffffff;
-            padding: 0.55rem 0.7rem;
-            text-align: left;
-            font-weight: 700;
+            line-height: 1.45;
         }
 
         @media (max-width: 860px) {
@@ -97,11 +87,8 @@
                     <div id="loginError" class="alert alert-danger py-2 mb-0 d-none"></div>
                 </form>
 
-                <div class="demo-access">
-                    <strong>Accesos iniciales</strong>
-                    <button type="button" data-user="administrador">administrador / admin123 - Administrador</button>
-                    <small>Crea coordinadores, recepcionistas y operativos desde Gestion de Equipo.</small>
-                    <small>Los usuarios se crean desde el panel de Personal con usuario, contrasena y rol asignado.</small>
+                <div class="login-note">
+                    Los accesos son administrados desde Gestion de Equipo. Solicita tu usuario y contrasena al administrador.
                 </div>
             </div>
         </section>
@@ -115,13 +102,6 @@
 
     <script>
         const SESSION_KEY = 'oxyliveSession';
-
-        document.querySelectorAll('[data-user]').forEach((button) => {
-            button.addEventListener('click', () => {
-                document.getElementById('usuario').value = button.dataset.user;
-                document.getElementById('password').value = 'oxylive123';
-            });
-        });
 
         document.getElementById('loginForm').addEventListener('submit', async (event) => {
             event.preventDefault();

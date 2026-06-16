@@ -164,6 +164,20 @@ def finalizar_ods(ods_id: int, data: FinalizarData, db: Session = Depends(get_db
     return {"mensaje": "ODS finalizada."}
 
 
+@router.delete("/{ods_id}")
+def eliminar_ods(ods_id: int, rol: str, db: Session = Depends(get_db)):
+    if (rol or "").upper() != "ADMINISTRADOR":
+        raise HTTPException(status_code=403, detail="Solo el administrador puede eliminar ODS")
+    proceso = db.query(models.Proceso).filter(models.Proceso.id == ods_id).first()
+    if not proceso:
+        raise HTTPException(status_code=404, detail="ODS no encontrada")
+    db.query(models.Diagnostico).filter(models.Diagnostico.proceso_id == ods_id).delete()
+    db.query(models.RepuestoUtilizado).filter(models.RepuestoUtilizado.proceso_id == ods_id).delete()
+    db.delete(proceso)
+    db.commit()
+    return {"mensaje": "ODS eliminada"}
+
+
 @router.get("/{ods_id}/diagnostico")
 def obtener_diagnostico(ods_id: int, db: Session = Depends(get_db)):
     diag = db.query(models.Diagnostico).filter(models.Diagnostico.proceso_id == ods_id).order_by(models.Diagnostico.id.desc()).first()

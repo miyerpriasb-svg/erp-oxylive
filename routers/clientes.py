@@ -81,6 +81,24 @@ def crear_cliente(cliente: ClienteNuevo, db: Session = Depends(get_db)):
     return {"mensaje": f"Cliente {cliente.razon_social} registrado."}
 
 
+@router.get("/crm/resumen")
+def resumen_clientes(db: Session = Depends(get_db)):
+    clientes = obtener_clientes(db)
+    por_segmento = Counter([c["segmento"] for c in clientes])
+    por_tipo_cliente = Counter([c["tipo_cliente"] for c in clientes])
+    por_tipo_interaccion = Counter()
+    for cliente in clientes:
+        por_tipo_interaccion.update(cliente["tipos_interaccion"])
+    return {
+        "total_clientes": len(clientes),
+        "total_interacciones": sum(c["total_interacciones"] for c in clientes),
+        "por_segmento": dict(por_segmento),
+        "por_tipo_cliente": dict(por_tipo_cliente),
+        "por_tipo_interaccion": dict(por_tipo_interaccion),
+        "clientes": clientes,
+    }
+
+
 @router.post("/{cliente_id}/interacciones")
 def crear_interaccion(cliente_id: int, interaccion: InteraccionNueva, db: Session = Depends(get_db)):
     cliente = db.query(models.Cliente).filter(models.Cliente.id == cliente_id).first()
@@ -103,20 +121,3 @@ def obtener_interacciones(cliente_id: int, db: Session = Depends(get_db)):
         models.InteraccionCliente.cliente_id == cliente_id
     ).order_by(models.InteraccionCliente.id.desc()).all()
 
-
-@router.get("/crm/resumen")
-def resumen_clientes(db: Session = Depends(get_db)):
-    clientes = obtener_clientes(db)
-    por_segmento = Counter([c["segmento"] for c in clientes])
-    por_tipo_cliente = Counter([c["tipo_cliente"] for c in clientes])
-    por_tipo_interaccion = Counter()
-    for cliente in clientes:
-        por_tipo_interaccion.update(cliente["tipos_interaccion"])
-    return {
-        "total_clientes": len(clientes),
-        "total_interacciones": sum(c["total_interacciones"] for c in clientes),
-        "por_segmento": dict(por_segmento),
-        "por_tipo_cliente": dict(por_tipo_cliente),
-        "por_tipo_interaccion": dict(por_tipo_interaccion),
-        "clientes": clientes,
-    }
