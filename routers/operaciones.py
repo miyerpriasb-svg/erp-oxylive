@@ -23,6 +23,23 @@ def registrar_interaccion_cliente(db: Session, cliente_id: int, tipo: str, detal
         ))
 
 
+def roles_usuario(rol: str):
+    return [r.strip().upper() for r in (rol or "").split(",") if r.strip()]
+
+
+def buscar_tecnico_especialista(db: Session, rol_requerido: str, tecnico_id: Optional[int] = None):
+    if tecnico_id:
+        tecnico = db.query(models.Usuario).filter(models.Usuario.id == tecnico_id).first()
+        if not tecnico or (tecnico.activo or "SI").upper() == "NO" or rol_requerido not in roles_usuario(tecnico.rol):
+            raise HTTPException(status_code=400, detail=f"La sub-ODS debe asignarse a un usuario con cargo {rol_requerido}")
+        return tecnico
+
+    for tecnico in db.query(models.Usuario).all():
+        if (tecnico.activo or "SI").upper() != "NO" and rol_requerido in roles_usuario(tecnico.rol):
+            return tecnico
+    raise HTTPException(status_code=400, detail=f"No hay tecnicos activos con cargo {rol_requerido}")
+
+
 class TamizOrdenData(BaseModel):
     marca: str
     cantidad: float
@@ -150,6 +167,8 @@ def crear_sub_ods(ods_id: int, sub: SubProcesoNuevo, db: Session = Depends(get_d
     tipo_normalizado = (sub.tipo_sub_ods or "").upper()
     es_tamiz = "TAMIZ" in tipo_normalizado or "LLENADO" in tipo_normalizado or "RECARGA" in tipo_normalizado
     es_compresor = "COMPRESOR" in tipo_normalizado
+    rol_destino = "TECNICO DE LLENA" if es_tamiz else ("TECNICO DE COMPRESORES" if es_compresor else "")
+    tecnico_destino = buscar_tecnico_especialista(db, rol_destino, sub.id_trabajador_asignado) if rol_destino else None
     nuevo = models.Proceso(
         ods=parent.ods,
         tipo_tarea=sub.tipo_tarea,
@@ -161,7 +180,7 @@ def crear_sub_ods(ods_id: int, sub: SubProcesoNuevo, db: Session = Depends(get_d
         parent_proceso_id=parent.id,
         sub_ods_tipo=sub.tipo_sub_ods,
         id_cliente=parent.id_cliente,
-        id_trabajador_asignado=sub.id_trabajador_asignado or parent.id_trabajador_asignado,
+        id_trabajador_asignado=tecnico_destino.id if tecnico_destino else (sub.id_trabajador_asignado or parent.id_trabajador_asignado),
         estado="PENDIENTE DIAGNÓSTICO",
         porcentaje_avance=10,
         fecha_creacion=hora_actual(),
@@ -176,9 +195,10 @@ def crear_sub_ods(ods_id: int, sub: SubProcesoNuevo, db: Session = Depends(get_d
                 cantidad=item.cantidad,
                 unidad_conteo=item.unidad_conteo or "Unidad",
             ))
-    registrar_interaccion_cliente(db, parent.id_cliente, "Sub-ODS creada", f"ODS {parent.ods}: {sub.tipo_sub_ods}")
+    destino = tecnico_destino.nombre if tecnico_destino else "Sin especialista"
+    registrar_interaccion_cliente(db, parent.id_cliente, "Sub-ODS creada", f"ODS {parent.ods}: {sub.tipo_sub_ods} asignada a {destino}")
     db.commit()
-    return {"mensaje": "Sub-ODS creada", "id": nuevo.id, "ods": parent.ods}
+    return {"mensaje": "Sub-ODS creada", "id": nuevo.id, "ods": parent.ods, "tecnico": destino}
 
 
 @router.post("/{ods_id}/diagnosticar")

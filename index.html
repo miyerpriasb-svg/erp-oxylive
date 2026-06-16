@@ -76,10 +76,11 @@
                         <form id="formOrdenTecnica">
                             <p class="fw-bold mb-2">Nueva orden especializada</p>
                             <select class="form-select mb-2" id="tecOdsMadreNueva" onchange="actualizarEstadoFormularioSubOds()" required></select>
-                            <select class="form-select mb-2" id="tecTipoOrdenNueva" onchange="toggleTamicesTecnico()" required>
+                            <select class="form-select mb-2" id="tecTipoOrdenNueva" onchange="toggleTamicesTecnico(); renderSelectEspecialistaDestino();" required>
                                 <option value="Mantenimiento de compresor">Mantenimiento de compresor</option>
                                 <option value="Llenado de tamices">Llenado de tamices</option>
                             </select>
+                            <select class="form-select mb-2" id="tecEspecialistaDestino" onchange="actualizarEstadoFormularioSubOds()" required></select>
                             <textarea class="form-control mb-2" id="tecDescNueva" rows="2" placeholder="Descripcion del requerimiento" required></textarea>
                             <div class="window d-none" id="panelTamicesTecnico">
                                 <div class="window-head"><h2 class="window-title">Tamices</h2><button class="btn btn-sm btn-outline-primary" type="button" onclick="agregarFilaTamizTecnico()">Agregar</button></div>
@@ -161,7 +162,7 @@
     <script>
         const SESSION_KEY = 'oxyliveSession';
         const $ = (id) => document.getElementById(id);
-        let modalTech, modalFinalizar, repuestosGlobales = [], ordenesTecnico = [], sesionActual = null;
+        let modalTech, modalFinalizar, repuestosGlobales = [], ordenesTecnico = [], usuariosTecnicos = [], sesionActual = null;
 
         function limpiarTexto(valor) {
             return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -198,6 +199,10 @@
             return rolesDesde(valor).some(rol => ROLES_TECNICOS.includes(rol));
         }
 
+        function usuarioTieneCargo(usuario, cargo) {
+            return rolesDesde(usuario).includes(cargo);
+        }
+
         function protegerOperativo() {
             const sesion = obtenerSesion();
             if (!sesion) { window.location.href = '/login'; return null; }
@@ -219,11 +224,13 @@
             const sesion = sesionActual || protegerOperativo();
             if (!sesion) return;
             try {
-                const [resProc, resInv] = await Promise.all([fetch('/procesos'), fetch('/inventario')]);
+                const [resProc, resInv, resUsu] = await Promise.all([fetch('/procesos'), fetch('/inventario'), fetch('/usuarios')]);
                 const procesos = await resProc.json();
                 repuestosGlobales = await resInv.json();
+                usuariosTecnicos = await resUsu.json();
                 ordenesTecnico = procesos.filter(p => Number(p.id_trabajador_asignado) === Number(sesion.id));
                 renderSelectOdsMadre();
+                renderSelectEspecialistaDestino();
                 renderOrdenesTecnico();
             } catch (e) {
                 console.error(e);
@@ -234,6 +241,22 @@
             const madres = ordenesTecnico.filter(p => !p.es_sub_ods);
             $('tecOdsMadreNueva').innerHTML = madres.map(p => `<option value="${p.id}">ODS #${limpiarTexto(p.ods)} - ${limpiarTexto(p.cliente)} - ${limpiarTexto(p.tipo_equipo || 'Equipo')}</option>`).join('');
             if (!madres.length) $('tecOdsMadreNueva').innerHTML = '<option value="">Sin ODS madre asignada</option>';
+            actualizarEstadoFormularioSubOds();
+        }
+
+        function cargoDestinoPorServicio(servicio = $('tecTipoOrdenNueva')?.value || '') {
+            const texto = normalizarTexto(servicio);
+            if (texto.includes('TAMIZ') || texto.includes('LLENADO') || texto.includes('RECARGA')) return 'TECNICO DE LLENA';
+            if (texto.includes('COMPRESOR')) return 'TECNICO DE COMPRESORES';
+            return '';
+        }
+
+        function renderSelectEspecialistaDestino() {
+            const cargo = cargoDestinoPorServicio();
+            const especialistas = usuariosTecnicos.filter(u => (u.activo || 'SI') !== 'NO' && cargo && usuarioTieneCargo(u, cargo));
+            $('tecEspecialistaDestino').innerHTML = especialistas.map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(cargo)}</option>`).join('');
+            if (!especialistas.length) $('tecEspecialistaDestino').innerHTML = `<option value="">Sin especialista ${limpiarTexto(cargo || 'disponible')}</option>`;
+            $('tecEspecialistaDestino').disabled = !especialistas.length;
             actualizarEstadoFormularioSubOds();
         }
 
@@ -317,6 +340,7 @@
                 ? opciones.map(opcion => `<option value="${opcion}">${opcion}</option>`).join('')
                 : '<option value="">Este cargo no crea sub-ODS especializadas</option>';
             select.disabled = !opciones.length;
+            renderSelectEspecialistaDestino();
             actualizarEstadoFormularioSubOds();
             toggleTamicesTecnico();
         }
@@ -324,8 +348,10 @@
         function actualizarEstadoFormularioSubOds() {
             const sinOrdenMadre = !$('tecOdsMadreNueva')?.value;
             const sinTipo = !$('tecTipoOrdenNueva')?.value;
-            const bloqueado = sinOrdenMadre || sinTipo;
+            const sinEspecialista = !$('tecEspecialistaDestino')?.value;
+            const bloqueado = sinOrdenMadre || sinTipo || sinEspecialista;
             $('tecOdsMadreNueva').disabled = !ordenesTecnico.some(p => !p.es_sub_ods);
+            $('tecEspecialistaDestino').disabled = sinEspecialista;
             $('tecDescNueva').disabled = bloqueado;
             $('formOrdenTecnica').querySelector('button[type="submit"]').disabled = bloqueado;
         }
@@ -382,12 +408,18 @@
             const servicio = $('tecTipoOrdenNueva').value;
             const odsMadreId = $('tecOdsMadreNueva').value;
             if (!odsMadreId) { alert('Selecciona una ODS madre asignada.'); return; }
-            await fetch(`/procesos/${odsMadreId}/sub-ods`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+            if (!$('tecEspecialistaDestino').value) { alert('No hay especialista activo para recibir esta sub-ODS.'); return; }
+            const res = await fetch(`/procesos/${odsMadreId}/sub-ods`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
                 tipo_sub_ods: servicio,
                 tipo_tarea: $('tecDescNueva').value,
-                id_trabajador_asignado: parseInt(sesionActual.id),
+                id_trabajador_asignado: parseInt($('tecEspecialistaDestino').value),
                 tamices: obtenerTamicesTecnico()
             }) });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.detail || 'No fue posible crear la sub-ODS.');
+                return;
+            }
             e.target.reset();
             $('tablaTamicesTecnico').innerHTML = '';
             ajustarOrdenesPermitidas();
