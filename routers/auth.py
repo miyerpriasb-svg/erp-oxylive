@@ -12,6 +12,10 @@ FALLBACK_USERS = {
     "administrador": {"id": 0, "nombre": "Administrador Oxylive", "rol": "ADMINISTRADOR"},
 }
 
+ROLES_ADMIN = {"ADMINISTRADOR", "COORDINADOR", "RECEPCIONISTA"}
+ROLES_TECNICOS = {"TECNICO", "MANTENIMIENTO DE COMPRESOR", "LLENADO DE TAMICES"}
+ROLES_PERMITIDOS = ROLES_ADMIN | ROLES_TECNICOS
+
 
 class LoginData(BaseModel):
     usuario: str
@@ -20,9 +24,11 @@ class LoginData(BaseModel):
 
 def destino_por_rol(rol: str) -> str:
     rol_normalizado = (rol or "").upper()
-    if rol_normalizado in {"OPERATIVO", "TECNICO", "TRABAJADOR", "TECNICO CAMPO", "TECNICO TALLER"}:
+    if rol_normalizado in ROLES_TECNICOS:
         return "/operativo"
-    return "/admin"
+    if rol_normalizado in ROLES_ADMIN:
+        return "/admin"
+    raise HTTPException(status_code=403, detail="Rol no habilitado")
 
 
 @router.post("/login")
@@ -32,12 +38,15 @@ def login(data: LoginData, db: Session = Depends(get_db)):
 
     user = db.query(models.Usuario).filter(models.Usuario.username == usuario).first()
     if user and (user.activo or "SI").upper() != "NO" and user.password == password:
+        rol = (user.rol or "").upper()
+        if rol not in ROLES_PERMITIDOS:
+            raise HTTPException(status_code=403, detail="Rol no habilitado")
         return {
             "id": user.id,
             "nombre": user.nombre,
             "usuario": user.username,
-            "rol": user.rol,
-            "redirect": destino_por_rol(user.rol),
+            "rol": rol,
+            "redirect": destino_por_rol(rol),
         }
 
     # Respaldo inicial para poder entrar y crear personal aunque la base tenga usuarios antiguos sin credenciales.

@@ -47,6 +47,14 @@ class Proceso(Base):
     fecha_aprobacion = Column(String)
     fecha_finalizacion = Column(String)
 
+class TamizOrden(Base):
+    __tablename__ = "tamices_orden"
+    id = Column(Integer, primary_key=True, index=True)
+    proceso_id = Column(Integer, index=True)
+    marca = Column(String)
+    cantidad = Column(Float)
+    unidad_conteo = Column(String)
+
 class ReporteTecnico(Base):
     __tablename__ = "reportes_tecnicos"
     id = Column(Integer, primary_key=True, index=True)

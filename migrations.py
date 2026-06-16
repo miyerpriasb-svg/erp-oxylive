@@ -22,3 +22,12 @@ def ensure_schema():
         ensure_column(connection, "procesos", "modelo_equipo", "VARCHAR")
         ensure_column(connection, "procesos", "horas_ingreso", "FLOAT")
         ensure_column(connection, "procesos", "modalidad_servicio", "VARCHAR")
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS tamices_orden (
+                id SERIAL PRIMARY KEY,
+                proceso_id INTEGER,
+                marca VARCHAR,
+                cantidad FLOAT,
+                unidad_conteo VARCHAR
+            )
+        """))

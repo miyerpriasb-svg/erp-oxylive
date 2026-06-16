@@ -7,6 +7,22 @@ from database import get_db
 
 router = APIRouter(tags=["Modulo de Personal"])
 
+ROLES_PERMITIDOS = {
+    "ADMINISTRADOR",
+    "COORDINADOR",
+    "RECEPCIONISTA",
+    "TECNICO",
+    "MANTENIMIENTO DE COMPRESOR",
+    "LLENADO DE TAMICES",
+}
+
+
+def normalizar_rol(rol: str) -> str:
+    rol_limpio = (rol or "").strip().upper()
+    if rol_limpio not in ROLES_PERMITIDOS:
+        raise HTTPException(status_code=400, detail="Rol no permitido")
+    return rol_limpio
+
 
 class UsuarioNuevo(BaseModel):
     nombre: str
@@ -42,6 +58,7 @@ def obtener_usuarios(db: Session = Depends(get_db)):
 @router.post("/usuarios")
 def crear_usuario(user: UsuarioNuevo, db: Session = Depends(get_db)):
     username = user.username.strip().lower()
+    rol = normalizar_rol(user.rol)
     if db.query(models.Usuario).filter(models.Usuario.username == username).first():
         raise HTTPException(status_code=400, detail="El usuario ya existe")
 
@@ -49,7 +66,7 @@ def crear_usuario(user: UsuarioNuevo, db: Session = Depends(get_db)):
         nombre=user.nombre,
         username=username,
         password=user.password,
-        rol=user.rol,
+        rol=rol,
         activo=user.activo or "SI",
     )
     db.add(nuevo)
@@ -78,7 +95,7 @@ def actualizar_usuario(usuario_id: int, data: UsuarioActualizar, db: Session = D
     if data.password:
         user.password = data.password
     if data.rol:
-        user.rol = data.rol
+        user.rol = normalizar_rol(data.rol)
     if data.activo:
         user.activo = data.activo
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
+from typing import List, Optional
 from datetime import datetime, timedelta
 import models
 from database import get_db
@@ -23,6 +23,12 @@ def registrar_interaccion_cliente(db: Session, cliente_id: int, tipo: str, detal
         ))
 
 
+class TamizOrdenData(BaseModel):
+    marca: str
+    cantidad: float
+    unidad_conteo: Optional[str] = "Unidad"
+
+
 class ProcesoNuevo(BaseModel):
     ods: str
     tipo_tarea: str
@@ -33,10 +39,10 @@ class ProcesoNuevo(BaseModel):
     modalidad_servicio: str = ""
     id_cliente: int
     id_trabajador_asignado: int
+    tamices: List[TamizOrdenData] = Field(default_factory=list)
 
 
 class DiagnosticoData(BaseModel):
-    tipo_equipo: str
     estado_compresor: str
     estado_tamiz: str
     estado_valvulas: str
@@ -60,6 +66,7 @@ def obtener_procesos(db: Session = Depends(get_db)):
     for p in procesos:
         cliente = db.query(models.Cliente).filter(models.Cliente.id == p.id_cliente).first()
         tecnico = db.query(models.Usuario).filter(models.Usuario.id == p.id_trabajador_asignado).first()
+        tamices = db.query(models.TamizOrden).filter(models.TamizOrden.proceso_id == p.id).all()
         resultado.append({
             "id": p.id,
             "ods": p.ods,
@@ -78,6 +85,15 @@ def obtener_procesos(db: Session = Depends(get_db)):
             "fecha_diagnostico": p.fecha_diagnostico,
             "fecha_aprobacion": p.fecha_aprobacion,
             "fecha_finalizacion": p.fecha_finalizacion,
+            "tamices": [
+                {
+                    "id": t.id,
+                    "marca": t.marca or "",
+                    "cantidad": t.cantidad or 0,
+                    "unidad_conteo": t.unidad_conteo or "Unidad",
+                }
+                for t in tamices
+            ],
         })
     return resultado
 
@@ -99,6 +115,15 @@ def crear_proceso(proc: ProcesoNuevo, db: Session = Depends(get_db)):
         fecha_creacion=hora_actual(),
     )
     db.add(nuevo)
+    db.flush()
+    for item in proc.tamices:
+        if item.marca or item.cantidad:
+            db.add(models.TamizOrden(
+                proceso_id=nuevo.id,
+                marca=item.marca,
+                cantidad=item.cantidad,
+                unidad_conteo=item.unidad_conteo or "Unidad",
+            ))
     registrar_interaccion_cliente(db, proc.id_cliente, "ODS creada", f"ODS {proc.ods}: {proc.tipo_tarea}")
     db.commit()
     return {"mensaje": "ODS creada exitosamente."}
@@ -111,7 +136,7 @@ def diagnosticar_ods(ods_id: int, diag: DiagnosticoData, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="ODS no encontrada")
     nuevo_diag = models.Diagnostico(
         proceso_id=ods_id,
-        tipo_equipo=diag.tipo_equipo,
+        tipo_equipo=proceso.tipo_equipo or "",
         estado_compresor=diag.estado_compresor,
         estado_tamiz=diag.estado_tamiz,
         estado_valvulas=diag.estado_valvulas,
@@ -173,6 +198,7 @@ def eliminar_ods(ods_id: int, rol: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="ODS no encontrada")
     db.query(models.Diagnostico).filter(models.Diagnostico.proceso_id == ods_id).delete()
     db.query(models.RepuestoUtilizado).filter(models.RepuestoUtilizado.proceso_id == ods_id).delete()
+    db.query(models.TamizOrden).filter(models.TamizOrden.proceso_id == ods_id).delete()
     db.delete(proceso)
     db.commit()
     return {"mensaje": "ODS eliminada"}

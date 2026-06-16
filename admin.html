@@ -68,11 +68,23 @@
                                 <form id="formOrden" class="window-body">
                                     <div class="splitter">
                                         <div><label class="form-label" for="odsTarea">Numero ODS</label><input class="form-control" id="odsTarea" required></div>
-                                        <div><label class="form-label" for="modalidadServicioOds">Servicio</label><select class="form-select" id="modalidadServicioOds"><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select></div>
+                                        <div><label class="form-label" for="modalidadServicioOds">Servicio</label><select class="form-select" id="modalidadServicioOds" onchange="toggleTamicesOds()"><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Mantenimiento de compresor</option><option>Llenado de tamices</option><option>Recarga de tamices</option></select></div>
                                     </div>
                                     <div class="mt-3"><label class="form-label" for="selectCliente">Cliente</label><select class="form-select" id="selectCliente" required></select></div>
                                     <div class="mt-3"><label class="form-label" for="selectTecnico">Tecnico asignado</label><select class="form-select" id="selectTecnico" required></select></div>
-                                    <div class="mt-3"><label class="form-label" for="tipoEquipoOds">Tipo de equipo</label><select class="form-select" id="tipoEquipoOds" required><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select></div>
+                                    <div class="mt-3"><label class="form-label" for="tipoEquipoOds">Tipo de equipo</label><select class="form-select" id="tipoEquipoOds" onchange="toggleTamicesOds()" required><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga de tamices</option><option>Compresor</option><option>Otro</option></select></div>
+                                    <div class="window mt-3 d-none" id="panelTamicesOds">
+                                        <div class="window-head">
+                                            <div><h2 class="window-title">Detalle de tamices</h2><p class="window-subtitle">Registra cantidades por marca, en pares o unidades.</p></div>
+                                            <button class="btn btn-sm btn-outline-primary" type="button" onclick="agregarFilaTamiz()">Agregar</button>
+                                        </div>
+                                        <div class="table-wrap" style="max-height: 240px;">
+                                            <table class="table table-sm align-middle">
+                                                <thead><tr><th>Marca</th><th>Cantidad</th><th>Conteo</th><th></th></tr></thead>
+                                                <tbody id="tablaTamicesOds"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                     <div class="splitter mt-3">
                                         <div><label class="form-label" for="marcaEquipoOds">Marca</label><input class="form-control" id="marcaEquipoOds"></div>
                                         <div><label class="form-label" for="modeloEquipoOds">Modelo</label><input class="form-control" id="modeloEquipoOds"></div>
@@ -95,8 +107,8 @@
                             <div class="window-body">
                                 <div class="toolbar">
                                     <input class="form-control wide" id="filtroOdsTexto" placeholder="Buscar ODS, cliente, tecnico o equipo" oninput="renderTablaProcesos()">
-                                    <select class="form-select" id="filtroOdsServicio" onchange="renderTablaProcesos()"><option value="">Todos los servicios</option><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select>
-                                    <select class="form-select" id="filtroOdsEquipo" onchange="renderTablaProcesos()"><option value="">Todos los equipos</option><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select>
+                                    <select class="form-select" id="filtroOdsServicio" onchange="renderTablaProcesos()"><option value="">Todos los servicios</option><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Mantenimiento de compresor</option><option>Llenado de tamices</option><option>Recarga de tamices</option></select>
+                                    <select class="form-select" id="filtroOdsEquipo" onchange="renderTablaProcesos()"><option value="">Todos los equipos</option><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga de tamices</option><option>Compresor</option><option>Otro</option></select>
                                 </div>
                             </div>
                             <div class="table-wrap">
@@ -232,7 +244,7 @@
                                 <label class="form-label" for="passwordUsuario">Contrasena</label>
                                 <input class="form-control mb-2" id="passwordUsuario" type="password" required>
                                 <label class="form-label" for="rolUsuario">Rol</label>
-                                <select class="form-select mb-3" id="rolUsuario"><option value="ADMINISTRADOR">Administrador</option><option value="ADMINISTRATIVO">Administrativo</option><option value="OPERATIVO">Operativo</option><option value="TECNICO">Tecnico</option><option value="COORDINADOR">Coordinador</option><option value="RECEPCIONISTA">Recepcionista</option></select>
+                                <select class="form-select mb-3" id="rolUsuario"><option value="ADMINISTRADOR">Administrador</option><option value="COORDINADOR">Coordinador</option><option value="RECEPCIONISTA">Recepcionista</option><option value="TECNICO">Tecnico</option><option value="MANTENIMIENTO DE COMPRESOR">Mantenimiento de compresor</option><option value="LLENADO DE TAMICES">Llenado de tamices</option></select>
                                 <div class="splitter">
                                     <button class="btn btn-primary" id="btnUsuarioSubmit" type="submit">Guardar usuario</button>
                                     <button class="btn btn-outline-secondary" type="button" onclick="limpiarUsuarioForm()">Limpiar</button>
@@ -294,7 +306,41 @@
         }
 
         function rolEsTecnico(rol) {
-            return ['TECNICO', 'OPERATIVO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
+            return ['TECNICO', 'MANTENIMIENTO DE COMPRESOR', 'LLENADO DE TAMICES'].includes((rol || '').toUpperCase());
+        }
+
+        function esOrdenTamices() {
+            const texto = normalizarTexto(`${$('modalidadServicioOds')?.value || ''} ${$('tipoEquipoOds')?.value || ''}`);
+            return texto.includes('TAMIZ') || texto.includes('RECARGA') || texto.includes('LLENADO');
+        }
+
+        function toggleTamicesOds() {
+            const panel = $('panelTamicesOds');
+            if (!panel) return;
+            const mostrar = esOrdenTamices();
+            panel.classList.toggle('d-none', !mostrar);
+            if (mostrar && !$('tablaTamicesOds').children.length) agregarFilaTamiz();
+        }
+
+        function agregarFilaTamiz(marca = '', cantidad = 1, unidad = 'Par') {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td><input class="form-control form-control-sm tamiz-marca" placeholder="Marca" value="${limpiarTexto(marca)}" required></td><td><input class="form-control form-control-sm tamiz-cantidad" type="number" min="0.5" step="0.5" value="${cantidad}" required></td><td><select class="form-select form-select-sm tamiz-unidad"><option ${unidad === 'Par' ? 'selected' : ''}>Par</option><option ${unidad === 'Unidad' ? 'selected' : ''}>Unidad</option></select></td><td><button class="btn btn-sm btn-outline-danger" type="button" onclick="this.closest('tr').remove()">Quitar</button></td>`;
+            $('tablaTamicesOds').appendChild(row);
+        }
+
+        function obtenerTamicesOds() {
+            if (!esOrdenTamices()) return [];
+            return [...document.querySelectorAll('#tablaTamicesOds tr')].map(row => ({
+                marca: row.querySelector('.tamiz-marca')?.value || '',
+                cantidad: parseFloat(row.querySelector('.tamiz-cantidad')?.value || 0),
+                unidad_conteo: row.querySelector('.tamiz-unidad')?.value || 'Unidad',
+            })).filter(item => item.marca || item.cantidad > 0);
+        }
+
+        function renderTamicesResumen(tamices = []) {
+            if (!tamices.length) return '';
+            const resumen = tamices.map(t => `${limpiarTexto(t.marca)}: ${t.cantidad} ${limpiarTexto(t.unidad_conteo)}`).join(' | ');
+            return `<br><small class="pill pill-blue mt-1">Tamices: ${resumen}</small>`;
         }
 
         function obtenerSesion() {
@@ -401,7 +447,7 @@
                 if (estado.includes('ESPERANDO')) {
                     estadoPill = 'pill-amber'; progressClass = 'bg-warning';
                     accion = `<button class="btn btn-sm btn-outline-primary" onclick="verDiagnostico(${p.id})">Ver reporte</button>`;
-                    if (['ADMINISTRADOR', 'ADMINISTRATIVO', 'COORDINADOR'].includes(perfilActual)) accion += `<button class="btn btn-sm btn-success" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar</button>`;
+                    if (['ADMINISTRADOR', 'COORDINADOR'].includes(perfilActual)) accion += `<button class="btn btn-sm btn-success" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar</button>`;
                 } else if (estado.includes('APROBADO')) {
                     estadoPill = 'pill-blue'; progressClass = 'bg-primary'; accion = `<span class="pill pill-blue">En ejecucion</span>`;
                 } else if (estado.includes('FINALIZADO')) {
@@ -418,7 +464,7 @@
 
                 return `<tr>
                     <td><span class="pill pill-dark">#${limpiarTexto(p.ods || 'N/A')}</span></td>
-                    <td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small class="text-muted">${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')} - ${p.horas_ingreso || 0} h</small><br><small>${limpiarTexto(p.tipo_tarea)}</small></td>
+                    <td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small class="text-muted">${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')} - ${p.horas_ingreso || 0} h</small>${renderTamicesResumen(p.tamices)}<br><small>${limpiarTexto(p.tipo_tarea)}</small></td>
                     <td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong><br><small class="text-muted">${limpiarTexto(p.tecnico)}</small></td>
                     <td>${tiempos}</td>
                     <td><div class="progress"><div class="progress-bar ${progressClass}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td>
@@ -530,7 +576,7 @@
             $('loginUsuario').value = usuario.username || '';
             $('passwordUsuario').value = '';
             $('passwordUsuario').required = false;
-            $('rolUsuario').value = usuario.rol || 'OPERATIVO';
+            $('rolUsuario').value = usuario.rol || 'TECNICO';
             $('btnUsuarioSubmit').textContent = 'Actualizar usuario';
         }
 
@@ -550,9 +596,12 @@
                 horas_ingreso: parseFloat($('horasEquipoOds').value || 0),
                 modalidad_servicio: $('modalidadServicioOds').value,
                 id_cliente: parseInt($('selectCliente').value),
-                id_trabajador_asignado: parseInt($('selectTecnico').value)
+                id_trabajador_asignado: parseInt($('selectTecnico').value),
+                tamices: obtenerTamicesOds()
             }) });
             e.target.reset();
+            $('tablaTamicesOds').innerHTML = '';
+            toggleTamicesOds();
             cargarTablas();
         });
 
