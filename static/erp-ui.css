@@ -150,6 +150,7 @@ body::before {
 }
 
 .command-strip {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -159,9 +160,39 @@ body::before {
     border: 1px solid rgba(174, 191, 200, 0.85);
     border-radius: 8px;
     background:
-        linear-gradient(135deg, rgba(255,255,255,0.94), rgba(239,247,248,0.94)),
-        linear-gradient(90deg, rgba(20,164,176,0.18), transparent 55%);
+        linear-gradient(90deg, rgba(255,255,255,0.94), rgba(255,255,255,0.84) 50%, rgba(255,255,255,0.66)),
+        linear-gradient(135deg, rgba(255,255,255,0.94), rgba(239,247,248,0.94));
+    background-size: cover;
+    background-position: center;
     box-shadow: var(--ox-soft-shadow);
+    overflow: hidden;
+}
+
+.command-strip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.92), rgba(255,255,255,0.62) 52%, rgba(255,255,255,0.18)),
+        linear-gradient(180deg, transparent, rgba(0,0,0,0.04));
+}
+
+.command-strip > * {
+    position: relative;
+    z-index: 1;
+}
+
+.command-admin {
+    background-image:
+        linear-gradient(90deg, rgba(255,255,255,0.94), rgba(255,255,255,0.78) 52%, rgba(255,255,255,0.2)),
+        url("assets/admin-command.png");
+}
+
+.command-ops {
+    background-image:
+        linear-gradient(90deg, rgba(255,255,255,0.94), rgba(255,255,255,0.78) 52%, rgba(255,255,255,0.2)),
+        url("assets/ops-command.png");
 }
 
 .command-strip h2 {
@@ -660,8 +691,12 @@ body::before {
     padding: clamp(1.5rem, 4vw, 3.7rem);
     color: #ffffff;
     background:
+        linear-gradient(90deg, rgba(16, 25, 35, 0.34), rgba(16, 25, 35, 0.08)),
+        url("assets/login-hero.png"),
         linear-gradient(135deg, rgba(16, 25, 35, 0.95), rgba(0, 111, 120, 0.9) 54%, rgba(45, 111, 159, 0.92)),
         #101923;
+    background-size: cover;
+    background-position: center;
     overflow: hidden;
 }
 
