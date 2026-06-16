@@ -121,19 +121,41 @@
                         <input type="hidden" id="techOdsId">
                         <div class="mini-chart mb-3" id="infoOdsDiagnostico"></div>
                         <div id="diagnosticoDetalle" class="mt-3">
-                            <div class="splitter">
-                                <div class="diag-compresor"><label class="form-label" for="techCompresor">Compresor</label><select class="form-select" id="techCompresor"><option>Operativo</option><option>Requiere mantenimiento</option><option>Critico</option><option>No aplica</option></select></div>
-                                <div class="diag-compresor"><label class="form-label" for="techValvulas">Valvulas</label><select class="form-select" id="techValvulas"><option>Operativas</option><option>Fallo parcial</option><option>Atascada</option><option>No aplica</option></select></div>
+                            <div id="panelDiagnosticoEquipo">
+                                <div class="splitter">
+                                    <div class="diag-compresor"><label class="form-label" for="techCompresor">Compresor</label><select class="form-select" id="techCompresor"><option>Operativo</option><option>Requiere mantenimiento</option><option>Critico</option><option>No aplica</option></select></div>
+                                    <div class="diag-compresor"><label class="form-label" for="techValvulas">Valvulas</label><select class="form-select" id="techValvulas"><option>Operativas</option><option>Fallo parcial</option><option>Atascada</option><option>No aplica</option></select></div>
+                                </div>
+                                <div class="splitter mt-3">
+                                    <div class="diag-tamiz"><label class="form-label" for="techTamiz">Tamiz</label><select class="form-select" id="techTamiz"><option>Operativo</option><option>Baja concentracion</option><option>Requiere recarga</option><option>No aplica</option></select></div>
+                                    <div><label class="form-label" for="techBateria">Bateria</label><select class="form-select" id="techBateria"><option>No aplica</option><option>Optima</option><option>Degradada</option><option>No detectada</option></select></div>
+                                </div>
                             </div>
-                            <div class="splitter mt-3">
-                                <div class="diag-tamiz"><label class="form-label" for="techTamiz">Tamiz</label><select class="form-select" id="techTamiz"><option>Operativo</option><option>Baja concentracion</option><option>Requiere recarga</option><option>No aplica</option></select></div>
-                                <div><label class="form-label" for="techBateria">Bateria</label><select class="form-select" id="techBateria"><option>No aplica</option><option>Optima</option><option>Degradada</option><option>No detectada</option></select></div>
+                            <div id="panelDiagnosticoCompresor" class="d-none">
+                                <div class="mini-chart mb-3"><strong>Diagnostico de compresor</strong><br><small class="text-muted">Marca solo los componentes que requieren intervencion.</small></div>
+                                <div class="diag-list">
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de anillos"> Cambio de anillos</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de empaques"> Cambio de empaques</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de bielas"> Cambio de bielas</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de camisas"> Cambio de camisas</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de tapas de compresor"> Cambio de tapas de compresor</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de soportes"> Cambio de soportes</label>
+                                </div>
+                            </div>
+                            <div id="panelDiagnosticoTamiz" class="d-none">
+                                <div class="mini-chart mb-3"><strong>Diagnostico de llenado</strong><br><small class="text-muted">Define que requiere el conjunto de tamices.</small></div>
+                                <div class="diag-list">
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Llenado del tamiz"> Llenado del tamiz</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de columnas"> Cambio de columnas</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de tapas"> Cambio de tapas</label>
+                                    <label class="repuesto-line"><input class="form-check-input diag-componente" type="checkbox" value="Cambio de o-rings"> Cambio de o-rings</label>
+                                </div>
                             </div>
                         </div>
                         <label class="form-label mt-3" for="techObs">Observaciones</label>
                         <textarea class="form-control" id="techObs" rows="4" placeholder="Hallazgos, accesorios, seriales, pruebas realizadas..."></textarea>
                     </div>
-                    <div class="modal-footer"><button type="submit" class="btn btn-primary w-100">Enviar a coordinacion</button></div>
+                    <div class="modal-footer"><button type="submit" class="btn btn-primary w-100" id="btnEnviarDiagnostico">Enviar a coordinacion</button></div>
                 </form>
             </div>
         </div>
@@ -162,7 +184,7 @@
     <script>
         const SESSION_KEY = 'oxyliveSession';
         const $ = (id) => document.getElementById(id);
-        let modalTech, modalFinalizar, repuestosGlobales = [], ordenesTecnico = [], usuariosTecnicos = [], sesionActual = null;
+        let modalTech, modalFinalizar, repuestosGlobales = [], procesosTecnicoTodos = [], ordenesTecnico = [], usuariosTecnicos = [], sesionActual = null;
 
         function limpiarTexto(valor) {
             return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -228,6 +250,7 @@
                 const procesos = await resProc.json();
                 repuestosGlobales = await resInv.json();
                 usuariosTecnicos = await resUsu.json();
+                procesosTecnicoTodos = procesos;
                 ordenesTecnico = procesos.filter(p => Number(p.id_trabajador_asignado) === Number(sesion.id));
                 renderSelectOdsMadre();
                 renderSelectEspecialistaDestino();
@@ -284,18 +307,29 @@
 
             $('tablaOrdenesTecnico').innerHTML = visibles.map(p => {
                 const estado = normalizarTexto(p.estado);
+                const pendientesEspecialistas = subOdsPendientesDe(p.id);
                 let pill = 'pill-muted', progress = 'bg-secondary', accion = '<span class="pill pill-muted">En espera</span>';
                 if (estado.includes('PENDIENTE')) {
-                    accion = `<button class="btn btn-sm btn-dark" onclick="iniciarDiagnostico(${p.id})">Diagnosticar</button>`;
+                    accion = pendientesEspecialistas.length
+                        ? '<span class="pill pill-amber">Esperando especialista</span>'
+                        : `<button class="btn btn-sm btn-dark" onclick="iniciarDiagnostico(${p.id})">${p.es_sub_ods ? 'Liberar diagnostico' : 'Diagnosticar'}</button>`;
                 } else if (estado.includes('ESPERANDO')) {
                     pill = 'pill-amber'; progress = 'bg-warning'; accion = '<span class="pill pill-amber">Coordinacion</span>';
                 } else if (estado.includes('APROBADO')) {
                     pill = 'pill-blue'; progress = 'bg-primary'; accion = `<button class="btn btn-sm btn-success" onclick="abrirChecklistFinal(${p.id})">Cerrar ODS</button>`;
+                } else if (estado.includes('LIBERADO')) {
+                    pill = 'pill-green'; progress = 'bg-success'; accion = '<span class="pill pill-green">Diagnostico liberado</span>';
                 } else if (estado.includes('FINALIZADO')) {
                     pill = 'pill-green'; progress = 'bg-success'; accion = '<span class="pill pill-green">Finalizada</span>';
                 }
-                return `<tr><td><span class="pill pill-dark">#${limpiarTexto(p.ods)}</span>${p.es_sub_ods ? '<br><span class="pill pill-blue mt-1">Sub-ODS</span>' : ''}</td><td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong></td><td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small>${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')}</small>${renderTamicesResumen(p.tamices)}<br><small class="text-muted">${limpiarTexto(p.tipo_tarea)}</small></td><td><div class="progress"><div class="progress-bar ${progress}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td><td><span class="pill ${pill}">${limpiarTexto(p.estado)}</span></td><td>${accion}</td></tr>`;
+                const espera = pendientesEspecialistas.length ? `<br><small class="pill pill-amber mt-1">Pendiente: ${pendientesEspecialistas.map(s => limpiarTexto(s.modalidad_servicio || s.sub_ods_tipo)).join(', ')}</small>` : '';
+                return `<tr><td><span class="pill pill-dark">#${limpiarTexto(p.ods)}</span>${p.es_sub_ods ? '<br><span class="pill pill-blue mt-1">Sub-ODS</span>' : ''}</td><td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong></td><td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small>${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')}</small>${renderTamicesResumen(p.tamices)}${espera}<br><small class="text-muted">${limpiarTexto(p.tipo_tarea)}</small></td><td><div class="progress"><div class="progress-bar ${progress}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td><td><span class="pill ${pill}">${limpiarTexto(p.estado)}</span></td><td>${accion}</td></tr>`;
             }).join('') || '<tr><td colspan="6" class="empty-state">No tienes ODS con estos filtros.</td></tr>';
+        }
+
+        function subOdsPendientesDe(parentId) {
+            const liberados = ['DIAGNOSTICO LIBERADO', 'FINALIZADO'];
+            return procesosTecnicoTodos.filter(p => Number(p.parent_proceso_id) === Number(parentId) && !liberados.includes(normalizarTexto(p.estado)));
         }
 
         function renderTamicesResumen(tamices = []) {
@@ -316,11 +350,17 @@
             const texto = normalizarTexto(`${orden?.modalidad_servicio || ''} ${orden?.tipo_equipo || ''} ${textoRoles(sesionActual)}`);
             const esTamiz = texto.includes('TAMIZ') || texto.includes('RECARGA') || texto.includes('LLENADO');
             const esCompresor = texto.includes('COMPRESOR');
-            document.querySelectorAll('.diag-compresor').forEach(el => el.classList.toggle('d-none', esTamiz && !esCompresor));
-            document.querySelectorAll('.diag-tamiz').forEach(el => el.classList.toggle('d-none', esCompresor && !esTamiz));
+            const esSub = Boolean(orden?.es_sub_ods);
+            $('panelDiagnosticoEquipo').classList.toggle('d-none', esSub);
+            $('panelDiagnosticoCompresor').classList.toggle('d-none', !(esSub && esCompresor));
+            $('panelDiagnosticoTamiz').classList.toggle('d-none', !(esSub && esTamiz));
+            document.querySelectorAll('.diag-componente').forEach(chk => chk.checked = false);
+            document.querySelectorAll('.diag-compresor').forEach(el => el.classList.toggle('d-none', !esSub && esTamiz && !esCompresor));
+            document.querySelectorAll('.diag-tamiz').forEach(el => el.classList.toggle('d-none', !esSub && esCompresor && !esTamiz));
             $('techCompresor').value = esTamiz && !esCompresor ? 'No aplica' : 'Operativo';
             $('techValvulas').value = esTamiz && !esCompresor ? 'No aplica' : 'Operativas';
             $('techTamiz').value = esCompresor && !esTamiz ? 'No aplica' : 'Operativo';
+            $('btnEnviarDiagnostico').textContent = esSub ? 'Liberar diagnostico' : 'Enviar a coordinacion';
         }
 
         function opcionesSubOdsPermitidas() {
@@ -385,19 +425,40 @@
 
         function limpiarFormulario() {
             $('formTechDiagnostico').reset();
+            document.querySelectorAll('.diag-componente').forEach(chk => chk.checked = false);
+        }
+
+        function componentesDiagnosticoSeleccionados() {
+            return [...document.querySelectorAll('.diag-componente:checked')].map(chk => chk.value);
         }
 
         $('formTechDiagnostico').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = $('techOdsId').value;
+            const orden = ordenesTecnico.find(p => Number(p.id) === Number(id));
+            const textoOrden = normalizarTexto(`${orden?.modalidad_servicio || ''} ${orden?.tipo_equipo || ''}`);
+            const esSub = Boolean(orden?.es_sub_ods);
+            const esCompresor = textoOrden.includes('COMPRESOR');
+            const esTamiz = textoOrden.includes('TAMIZ') || textoOrden.includes('RECARGA') || textoOrden.includes('LLENADO');
+            const componentes = componentesDiagnosticoSeleccionados();
+            if (esSub && !componentes.length) {
+                alert('Selecciona al menos un requerimiento para liberar el diagnostico especializado.');
+                return;
+            }
             const payload = {
-                estado_compresor: $('techCompresor').value,
-                estado_tamiz: $('techTamiz').value,
-                estado_valvulas: $('techValvulas').value,
-                estado_bateria: $('techBateria').value,
-                observaciones: $('techObs').value
+                estado_compresor: esSub ? (esCompresor ? 'Requiere intervencion' : 'No aplica') : $('techCompresor').value,
+                estado_tamiz: esSub ? (esTamiz ? 'Requiere intervencion' : 'No aplica') : $('techTamiz').value,
+                estado_valvulas: esSub ? 'No aplica' : $('techValvulas').value,
+                estado_bateria: esSub ? 'No aplica' : $('techBateria').value,
+                observaciones: $('techObs').value,
+                componentes
             };
-            await fetch(`/procesos/${id}/diagnosticar`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            const res = await fetch(`/procesos/${id}/diagnosticar`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.detail || 'No fue posible guardar el diagnostico.');
+                return;
+            }
             modalTech.hide();
             limpiarFormulario();
             cargarOrdenesTecnico();

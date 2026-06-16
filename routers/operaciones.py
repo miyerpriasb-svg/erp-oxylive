@@ -72,6 +72,27 @@ class DiagnosticoData(BaseModel):
     estado_valvulas: str
     estado_bateria: str
     observaciones: str
+    componentes: List[str] = Field(default_factory=list)
+
+
+def ultimo_diagnostico(db: Session, proceso_id: int):
+    return db.query(models.Diagnostico).filter(models.Diagnostico.proceso_id == proceso_id).order_by(models.Diagnostico.id.desc()).first()
+
+
+def sub_ods_pendientes_diagnostico(db: Session, proceso_id: int):
+    sub_ods = db.query(models.Proceso).filter(models.Proceso.parent_proceso_id == proceso_id).all()
+    estados_liberados = {"DIAGNOSTICO LIBERADO", "DIAGNÓSTICO LIBERADO", "FINALIZADO"}
+    return [sub for sub in sub_ods if (sub.estado or "").upper() not in estados_liberados]
+
+
+def resumen_diagnosticos_sub_ods(db: Session, proceso_id: int):
+    sub_ods = db.query(models.Proceso).filter(models.Proceso.parent_proceso_id == proceso_id).all()
+    resumen = []
+    for sub in sub_ods:
+        diag = ultimo_diagnostico(db, sub.id)
+        if diag:
+            resumen.append(f"{sub.modalidad_servicio or sub.sub_ods_tipo}: {diag.observaciones or 'Sin observaciones'}")
+    return "\n".join(resumen)
 
 
 class ParteUsada(BaseModel):
@@ -206,6 +227,18 @@ def diagnosticar_ods(ods_id: int, diag: DiagnosticoData, db: Session = Depends(g
     proceso = db.query(models.Proceso).filter(models.Proceso.id == ods_id).first()
     if not proceso:
         raise HTTPException(status_code=404, detail="ODS no encontrada")
+    if not proceso.parent_proceso_id:
+        pendientes = sub_ods_pendientes_diagnostico(db, proceso.id)
+        if pendientes:
+            detalle = ", ".join([p.modalidad_servicio or p.sub_ods_tipo or p.tipo_equipo or f"Sub-ODS {p.id}" for p in pendientes])
+            raise HTTPException(status_code=400, detail=f"Debes esperar la liberacion del diagnostico especializado: {detalle}")
+    componentes = ", ".join(diag.componentes)
+    observaciones = diag.observaciones
+    if componentes:
+        observaciones = f"Componentes requeridos: {componentes}\n{observaciones}".strip()
+    resumen_sub_ods = resumen_diagnosticos_sub_ods(db, proceso.id) if not proceso.parent_proceso_id else ""
+    if resumen_sub_ods:
+        observaciones = f"{observaciones}\n\nDiagnosticos especializados liberados:\n{resumen_sub_ods}".strip()
     nuevo_diag = models.Diagnostico(
         proceso_id=ods_id,
         tipo_equipo=proceso.tipo_equipo or "",
@@ -213,15 +246,18 @@ def diagnosticar_ods(ods_id: int, diag: DiagnosticoData, db: Session = Depends(g
         estado_tamiz=diag.estado_tamiz,
         estado_valvulas=diag.estado_valvulas,
         estado_bateria=diag.estado_bateria,
-        observaciones=diag.observaciones,
+        observaciones=observaciones,
     )
     db.add(nuevo_diag)
     registrar_interaccion_cliente(db, proceso.id_cliente, "Diagnostico", f"Diagnostico registrado para {proceso.ods}")
     proceso.estado = "ESPERANDO APROBACIÓN"
     proceso.porcentaje_avance = 30
+    if proceso.parent_proceso_id:
+        proceso.estado = "DIAGNOSTICO LIBERADO"
+        proceso.porcentaje_avance = 45
     proceso.fecha_diagnostico = hora_actual()
     db.commit()
-    return {"mensaje": "Diagnostico registrado."}
+    return {"mensaje": "Diagnostico registrado.", "estado": proceso.estado}
 
 
 @router.post("/{ods_id}/cambiar-estado")
