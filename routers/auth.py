@@ -33,12 +33,22 @@ class LoginData(BaseModel):
     password: str
 
 
-def destino_por_rol(rol: str) -> str:
-    rol_normalizado = (rol or "").upper()
-    if rol_normalizado in ROLES_TECNICOS:
-        return "/operativo"
-    if rol_normalizado in ROLES_ADMIN:
+def roles_usuario(rol: str):
+    return [r.strip().upper() for r in (rol or "").split(",") if r.strip()]
+
+
+def validar_roles(rol: str):
+    roles = roles_usuario(rol)
+    if not roles or any(r not in ROLES_PERMITIDOS for r in roles):
+        raise HTTPException(status_code=403, detail="Rol no habilitado")
+    return roles
+
+
+def destino_por_roles(roles) -> str:
+    if any(r in ROLES_ADMIN for r in roles):
         return "/admin"
+    if any(r in ROLES_TECNICOS for r in roles):
+        return "/operativo"
     raise HTTPException(status_code=403, detail="Rol no habilitado")
 
 
@@ -49,22 +59,23 @@ def login(data: LoginData, db: Session = Depends(get_db)):
 
     user = db.query(models.Usuario).filter(models.Usuario.username == usuario).first()
     if user and (user.activo or "SI").upper() != "NO" and user.password == password:
-        rol = (user.rol or "").upper()
-        if rol not in ROLES_PERMITIDOS:
-            raise HTTPException(status_code=403, detail="Rol no habilitado")
+        roles = validar_roles(user.rol or "")
         return {
             "id": user.id,
             "nombre": user.nombre,
             "usuario": user.username,
-            "rol": rol,
-            "redirect": destino_por_rol(rol),
+            "rol": ", ".join(roles),
+            "roles": roles,
+            "redirect": destino_por_roles(roles),
         }
 
     # Respaldo inicial para poder entrar y crear personal aunque la base tenga usuarios antiguos sin credenciales.
     if usuario in FALLBACK_USERS and password == DEFAULT_PASSWORD:
         session = FALLBACK_USERS[usuario].copy()
+        roles = validar_roles(session["rol"])
         session["usuario"] = usuario
-        session["redirect"] = destino_por_rol(session["rol"])
+        session["roles"] = roles
+        session["redirect"] = destino_por_roles(roles)
         return session
 
     raise HTTPException(status_code=401, detail="Usuario o contrasena incorrectos")

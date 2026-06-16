@@ -243,8 +243,8 @@
                                 <input class="form-control mb-2" id="loginUsuario" required>
                                 <label class="form-label" for="passwordUsuario">Contrasena</label>
                                 <input class="form-control mb-2" id="passwordUsuario" type="password" required>
-                                <label class="form-label" for="rolUsuario">Rol</label>
-                                <select class="form-select mb-3" id="rolUsuario"><option value="GERENTE GENERAL">Gerente general</option><option value="COORDINADOR ADMINISTRATIVO">Coordinador administrativo</option><option value="COORDINADOR COMERCIAL">Coordinador comercial</option><option value="CONTADOR">Contador</option><option value="JURIDICO">Juridico</option><option value="TECNICO DE ESTACIONARIOS">Tecnico de estacionarios</option><option value="TECNICO DE PORTATILES">Tecnico de portatiles</option><option value="TECNICO DE LLENA">Tecnico de llena</option><option value="TECNICO DE COMPRESORES">Tecnico de compresores</option></select>
+                                <label class="form-label" for="rolUsuario">Cargos asignados</label>
+                                <select class="form-select mb-3" id="rolUsuario" multiple size="9"><option value="GERENTE GENERAL">Gerente general</option><option value="COORDINADOR ADMINISTRATIVO">Coordinador administrativo</option><option value="COORDINADOR COMERCIAL">Coordinador comercial</option><option value="CONTADOR">Contador</option><option value="JURIDICO">Juridico</option><option value="TECNICO DE ESTACIONARIOS">Tecnico de estacionarios</option><option value="TECNICO DE PORTATILES">Tecnico de portatiles</option><option value="TECNICO DE LLENA">Tecnico de llena</option><option value="TECNICO DE COMPRESORES">Tecnico de compresores</option></select>
                                 <div class="splitter">
                                     <button class="btn btn-primary" id="btnUsuarioSubmit" type="submit">Guardar usuario</button>
                                     <button class="btn btn-outline-secondary" type="button" onclick="limpiarUsuarioForm()">Limpiar</button>
@@ -253,7 +253,7 @@
                         </div>
 
                         <div class="window">
-                            <div class="window-head"><div><h2 class="window-title">Matriz de personal</h2><p class="window-subtitle">ID, usuario, rol, estado y acciones.</p></div></div>
+                            <div class="window-head"><div><h2 class="window-title">Matriz de personal</h2><p class="window-subtitle">ID, usuario, cargos, estado y acciones.</p></div></div>
                             <div class="window-body">
                                 <div class="toolbar">
                                     <input class="form-control wide" id="filtroUsuarioTexto" placeholder="Buscar usuario, nombre o rol" oninput="renderUsuarios()">
@@ -261,7 +261,7 @@
                                 </div>
                             </div>
                             <div class="table-wrap">
-                                <table class="table align-middle text-center"><thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tablaUsuarios"></tbody></table>
+                                <table class="table align-middle text-center"><thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Cargos</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tablaUsuarios"></tbody></table>
                             </div>
                         </div>
                     </div>
@@ -305,16 +305,39 @@
                 .toUpperCase();
         }
 
-        function rolEsTecnico(rol) {
-            return ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'].includes((rol || '').toUpperCase());
+        const ROLES_TECNICOS = ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'];
+        const ROLES_ADMIN = ['GERENTE GENERAL', 'COORDINADOR ADMINISTRATIVO', 'COORDINADOR COMERCIAL', 'CONTADOR', 'JURIDICO'];
+
+        function rolesDesde(valor) {
+            if (Array.isArray(valor)) return valor.map(r => normalizarTexto(r)).filter(Boolean);
+            if (valor && typeof valor === 'object') return rolesDesde(valor.roles?.length ? valor.roles : valor.rol);
+            return String(valor || '').split(',').map(r => normalizarTexto(r)).filter(Boolean);
         }
 
-        function puedeGestionarEquipo(rol) {
-            return (rol || '').toUpperCase() === 'GERENTE GENERAL';
+        function rolesVisibles(valor) {
+            if (Array.isArray(valor)) return valor.filter(Boolean);
+            if (valor && typeof valor === 'object') return rolesVisibles(valor.roles?.length ? valor.roles : valor.rol);
+            return String(valor || '').split(',').map(r => r.trim()).filter(Boolean);
         }
 
-        function puedeAprobarOds(rol) {
-            return ['GERENTE GENERAL', 'COORDINADOR ADMINISTRATIVO'].includes((rol || '').toUpperCase());
+        function textoRoles(valor) {
+            return rolesVisibles(valor).join(', ');
+        }
+
+        function rolEsTecnico(valor) {
+            return rolesDesde(valor).some(rol => ROLES_TECNICOS.includes(rol));
+        }
+
+        function rolEsAdministrativo(valor) {
+            return rolesDesde(valor).some(rol => ROLES_ADMIN.includes(rol));
+        }
+
+        function puedeGestionarEquipo(valor) {
+            return rolesDesde(valor).includes('GERENTE GENERAL');
+        }
+
+        function puedeAprobarOds(valor) {
+            return rolesDesde(valor).some(rol => ['GERENTE GENERAL', 'COORDINADOR ADMINISTRATIVO'].includes(rol));
         }
 
         function esOrdenTamices() {
@@ -359,11 +382,11 @@
         function protegerAdmin() {
             const sesion = obtenerSesion();
             if (!sesion) { window.location.href = '/login'; return null; }
-            if (rolEsTecnico(sesion.rol)) { window.location.href = '/operativo'; return null; }
+            if (!rolEsAdministrativo(sesion)) { window.location.href = '/operativo'; return null; }
             sesionActual = sesion;
-            $('sessionAdminLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
-            $('vistaAdminRol').value = (sesion.rol || '').toUpperCase();
-            if (!puedeGestionarEquipo(sesion.rol)) $('tabEquipoNav')?.classList.add('d-none');
+            $('sessionAdminLabel').innerText = `${sesion.nombre} - ${textoRoles(sesion)}`;
+            $('vistaAdminRol').value = textoRoles(sesion).toUpperCase();
+            if (!puedeGestionarEquipo(sesion)) $('tabEquipoNav')?.classList.add('d-none');
             return sesion;
         }
 
@@ -399,7 +422,7 @@
 
                 $('selectCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)} - ${limpiarTexto(c.nit)}</option>`).join('');
                 $('interaccionCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)}</option>`).join('');
-                $('selectTecnico').innerHTML = usuariosGlobales.filter(u => rolEsTecnico(u.rol) && (u.activo || 'SI') !== 'NO').map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(u.rol)}</option>`).join('');
+                $('selectTecnico').innerHTML = usuariosGlobales.filter(u => rolEsTecnico(u) && (u.activo || 'SI') !== 'NO').map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(textoRoles(u))}</option>`).join('');
 
                 $('selectAbastecerItem').innerHTML = inventarioGlobal.map(i => `<option value="${i.id}">${limpiarTexto(i.nombre_insumo)}</option>`).join('');
                 $('selSalidaRepuesto').innerHTML = inventarioGlobal.map(i => `<option value="${limpiarTexto(i.nombre_insumo)}">${limpiarTexto(i.nombre_insumo)} (${i.cantidad_disponible})</option>`).join('');
@@ -422,7 +445,7 @@
             const texto = normalizarTexto($('filtroOdsTexto')?.value || '');
             const servicio = $('filtroOdsServicio')?.value || '';
             const equipo = $('filtroOdsEquipo')?.value || '';
-            const perfilActual = (sesionActual?.rol || '').toUpperCase();
+            const perfilActual = sesionActual || {};
 
             let cPendiente = 0, cAprobacion = 0, cEjecucion = 0, cFinalizado = 0;
             procesosGlobales.forEach(p => {
@@ -462,7 +485,7 @@
                     estadoPill = 'pill-green'; progressClass = 'bg-success'; accion = `<span class="pill pill-green">Cerrada</span>`;
                 }
 
-                if (perfilActual === 'GERENTE GENERAL') accion += `<button class="btn btn-sm btn-outline-danger" onclick="eliminarOds(${p.id})">Eliminar</button>`;
+                if (puedeGestionarEquipo(perfilActual)) accion += `<button class="btn btn-sm btn-outline-danger" onclick="eliminarOds(${p.id})">Eliminar</button>`;
 
                 let tiempos = `<div class="small text-start"><strong>Ingreso:</strong> ${limpiarTexto(p.fecha_creacion || 'N/A')}`;
                 if (p.fecha_diagnostico) tiempos += `<br><span>Diag: ${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span>`;
@@ -471,7 +494,7 @@
                 tiempos += `</div>`;
 
                 return `<tr>
-                    <td><span class="pill pill-dark">#${limpiarTexto(p.ods || 'N/A')}</span></td>
+                    <td><span class="pill pill-dark">#${limpiarTexto(p.ods || 'N/A')}</span>${p.es_sub_ods ? '<br><span class="pill pill-blue mt-1">Sub-ODS</span>' : ''}</td>
                     <td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small class="text-muted">${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')} - ${p.horas_ingreso || 0} h</small>${renderTamicesResumen(p.tamices)}<br><small>${limpiarTexto(p.tipo_tarea)}</small></td>
                     <td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong><br><small class="text-muted">${limpiarTexto(p.tecnico)}</small></td>
                     <td>${tiempos}</td>
@@ -537,12 +560,13 @@
             const estado = $('filtroUsuarioEstado')?.value || '';
             const usuarios = usuariosGlobales.filter(u => {
                 const activo = u.activo || 'SI';
-                const busca = normalizarTexto(`${u.id} ${u.nombre} ${u.username} ${u.rol}`);
+                const busca = normalizarTexto(`${u.id} ${u.nombre} ${u.username} ${textoRoles(u)}`);
                 return (!texto || busca.includes(texto)) && (!estado || activo === estado);
             });
             $('tablaUsuarios').innerHTML = usuarios.map(u => {
                 const activo = (u.activo || 'SI') !== 'NO';
-                return `<tr><td>${u.id}</td><td class="text-start"><strong>${limpiarTexto(u.nombre)}</strong></td><td>${limpiarTexto(u.username || '')}</td><td><span class="pill pill-blue">${limpiarTexto(u.rol)}</span></td><td><span class="pill ${activo ? 'pill-green' : 'pill-muted'}">${activo ? 'Activo' : 'Inactivo'}</span></td><td><div class="inline-actions"><button class="btn btn-sm btn-outline-primary" onclick="editarUsuarioPorId(${u.id})">Editar</button><button class="btn btn-sm ${activo ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="cambiarEstadoUsuario(${u.id}, '${activo ? 'NO' : 'SI'}')">${activo ? 'Bajar' : 'Subir'}</button></div></td></tr>`;
+                const rolesHtml = rolesVisibles(u).map(rol => `<span class="pill pill-blue">${limpiarTexto(rol)}</span>`).join(' ');
+                return `<tr><td>${u.id}</td><td class="text-start"><strong>${limpiarTexto(u.nombre)}</strong></td><td>${limpiarTexto(u.username || '')}</td><td class="text-start">${rolesHtml}</td><td><span class="pill ${activo ? 'pill-green' : 'pill-muted'}">${activo ? 'Activo' : 'Inactivo'}</span></td><td><div class="inline-actions"><button class="btn btn-sm btn-outline-primary" onclick="editarUsuarioPorId(${u.id})">Editar</button><button class="btn btn-sm ${activo ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="cambiarEstadoUsuario(${u.id}, '${activo ? 'NO' : 'SI'}')">${activo ? 'Bajar' : 'Subir'}</button></div></td></tr>`;
             }).join('') || `<tr><td colspan="6" class="empty-state">No hay usuarios con estos filtros.</td></tr>`;
         }
 
@@ -552,8 +576,8 @@
         }
 
         async function eliminarOds(id) {
-            const rol = (sesionActual?.rol || '').toUpperCase();
-            if (rol !== 'GERENTE GENERAL') { alert('Solo Gerencia General puede eliminar ODS.'); return; }
+            const rol = puedeGestionarEquipo(sesionActual) ? 'GERENTE GENERAL' : '';
+            if (!rol) { alert('Solo Gerencia General puede eliminar ODS.'); return; }
             if (!confirm('Esta accion eliminara la ODS de la bitacora. Deseas continuar?')) return;
             const res = await fetch(`/procesos/${id}?rol=${rol}`, { method: 'DELETE' });
             if (!res.ok) { alert('No fue posible eliminar la ODS.'); return; }
@@ -572,6 +596,7 @@
         function limpiarUsuarioForm() {
             $('usuarioEditandoId').value = '';
             $('formUsuario').reset();
+            [...$('rolUsuario').options].forEach(option => option.selected = false);
             $('passwordUsuario').required = true;
             $('btnUsuarioSubmit').textContent = 'Guardar usuario';
         }
@@ -584,7 +609,8 @@
             $('loginUsuario').value = usuario.username || '';
             $('passwordUsuario').value = '';
             $('passwordUsuario').required = false;
-            $('rolUsuario').value = usuario.rol || 'TECNICO DE ESTACIONARIOS';
+            const roles = rolesDesde(usuario);
+            [...$('rolUsuario').options].forEach(option => option.selected = roles.includes(normalizarTexto(option.value)));
             $('btnUsuarioSubmit').textContent = 'Actualizar usuario';
         }
 
@@ -636,7 +662,9 @@
         $('formUsuario').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = $('usuarioEditandoId').value;
-            const payload = { nombre: $('nombreUsuario').value, username: $('loginUsuario').value, rol: $('rolUsuario').value, activo: 'SI' };
+            const roles = [...$('rolUsuario').selectedOptions].map(option => option.value);
+            if (!roles.length) { alert('Selecciona al menos un cargo.'); return; }
+            const payload = { nombre: $('nombreUsuario').value, username: $('loginUsuario').value, rol: roles, activo: 'SI' };
             if ($('passwordUsuario').value) payload.password = $('passwordUsuario').value;
             const url = id ? `/usuarios/${id}` : '/usuarios';
             const method = id ? 'PUT' : 'POST';

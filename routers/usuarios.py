@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional, Union
 import models
 from database import get_db
 
@@ -20,18 +20,33 @@ ROLES_PERMITIDOS = {
 }
 
 
-def normalizar_rol(rol: str) -> str:
-    rol_limpio = (rol or "").strip().upper()
-    if rol_limpio not in ROLES_PERMITIDOS:
-        raise HTTPException(status_code=400, detail="Rol no permitido")
-    return rol_limpio
+def normalizar_roles(roles: Union[str, List[str]]) -> str:
+    if isinstance(roles, str):
+        candidatos = [r.strip().upper() for r in roles.split(",")]
+    else:
+        candidatos = [str(r).strip().upper() for r in roles]
+    roles_limpios = []
+    for rol in candidatos:
+        if not rol:
+            continue
+        if rol not in ROLES_PERMITIDOS:
+            raise HTTPException(status_code=400, detail=f"Rol no permitido: {rol}")
+        if rol not in roles_limpios:
+            roles_limpios.append(rol)
+    if not roles_limpios:
+        raise HTTPException(status_code=400, detail="Debe asignar al menos un rol")
+    return ", ".join(roles_limpios)
+
+
+def roles_usuario(rol: str) -> List[str]:
+    return [r.strip().upper() for r in (rol or "").split(",") if r.strip()]
 
 
 class UsuarioNuevo(BaseModel):
     nombre: str
     username: str
     password: str
-    rol: str
+    rol: Union[str, List[str]]
     activo: Optional[str] = "SI"
 
 
@@ -39,7 +54,7 @@ class UsuarioActualizar(BaseModel):
     nombre: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
-    rol: Optional[str] = None
+    rol: Optional[Union[str, List[str]]] = None
     activo: Optional[str] = None
 
 
@@ -52,6 +67,7 @@ def obtener_usuarios(db: Session = Depends(get_db)):
             "nombre": u.nombre,
             "username": u.username,
             "rol": u.rol,
+            "roles": roles_usuario(u.rol),
             "activo": u.activo or "SI",
         }
         for u in usuarios
@@ -61,7 +77,7 @@ def obtener_usuarios(db: Session = Depends(get_db)):
 @router.post("/usuarios")
 def crear_usuario(user: UsuarioNuevo, db: Session = Depends(get_db)):
     username = user.username.strip().lower()
-    rol = normalizar_rol(user.rol)
+    rol = normalizar_roles(user.rol)
     if db.query(models.Usuario).filter(models.Usuario.username == username).first():
         raise HTTPException(status_code=400, detail="El usuario ya existe")
 
@@ -98,7 +114,7 @@ def actualizar_usuario(usuario_id: int, data: UsuarioActualizar, db: Session = D
     if data.password:
         user.password = data.password
     if data.rol:
-        user.rol = normalizar_rol(data.rol)
+        user.rol = normalizar_roles(data.rol)
     if data.activo:
         user.activo = data.activo
 

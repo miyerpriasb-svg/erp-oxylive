@@ -42,6 +42,13 @@ class ProcesoNuevo(BaseModel):
     tamices: List[TamizOrdenData] = Field(default_factory=list)
 
 
+class SubProcesoNuevo(BaseModel):
+    tipo_sub_ods: str
+    tipo_tarea: str
+    id_trabajador_asignado: Optional[int] = None
+    tamices: List[TamizOrdenData] = Field(default_factory=list)
+
+
 class DiagnosticoData(BaseModel):
     estado_compresor: str
     estado_tamiz: str
@@ -76,6 +83,9 @@ def obtener_procesos(db: Session = Depends(get_db)):
             "modelo_equipo": p.modelo_equipo or "",
             "horas_ingreso": p.horas_ingreso or 0,
             "modalidad_servicio": p.modalidad_servicio or "",
+            "parent_proceso_id": p.parent_proceso_id,
+            "sub_ods_tipo": p.sub_ods_tipo or "",
+            "es_sub_ods": bool(p.parent_proceso_id),
             "cliente": cliente.razon_social if cliente else "N/A",
             "tecnico": tecnico.nombre if tecnico else "N/A",
             "id_trabajador_asignado": p.id_trabajador_asignado,
@@ -108,6 +118,8 @@ def crear_proceso(proc: ProcesoNuevo, db: Session = Depends(get_db)):
         modelo_equipo=proc.modelo_equipo,
         horas_ingreso=proc.horas_ingreso,
         modalidad_servicio=proc.modalidad_servicio,
+        parent_proceso_id=None,
+        sub_ods_tipo="",
         id_cliente=proc.id_cliente,
         id_trabajador_asignado=proc.id_trabajador_asignado,
         estado="PENDIENTE DIAGNÓSTICO",
@@ -127,6 +139,46 @@ def crear_proceso(proc: ProcesoNuevo, db: Session = Depends(get_db)):
     registrar_interaccion_cliente(db, proc.id_cliente, "ODS creada", f"ODS {proc.ods}: {proc.tipo_tarea}")
     db.commit()
     return {"mensaje": "ODS creada exitosamente."}
+
+
+@router.post("/{ods_id}/sub-ods")
+def crear_sub_ods(ods_id: int, sub: SubProcesoNuevo, db: Session = Depends(get_db)):
+    parent = db.query(models.Proceso).filter(models.Proceso.id == ods_id).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="ODS madre no encontrada")
+
+    tipo_normalizado = (sub.tipo_sub_ods or "").upper()
+    es_tamiz = "TAMIZ" in tipo_normalizado or "LLENADO" in tipo_normalizado or "RECARGA" in tipo_normalizado
+    es_compresor = "COMPRESOR" in tipo_normalizado
+    nuevo = models.Proceso(
+        ods=parent.ods,
+        tipo_tarea=sub.tipo_tarea,
+        tipo_equipo="Lote de tamices" if es_tamiz else ("Compresor" if es_compresor else parent.tipo_equipo),
+        marca_equipo=parent.marca_equipo,
+        modelo_equipo=parent.modelo_equipo,
+        horas_ingreso=parent.horas_ingreso,
+        modalidad_servicio=sub.tipo_sub_ods,
+        parent_proceso_id=parent.id,
+        sub_ods_tipo=sub.tipo_sub_ods,
+        id_cliente=parent.id_cliente,
+        id_trabajador_asignado=sub.id_trabajador_asignado or parent.id_trabajador_asignado,
+        estado="PENDIENTE DIAGNÓSTICO",
+        porcentaje_avance=10,
+        fecha_creacion=hora_actual(),
+    )
+    db.add(nuevo)
+    db.flush()
+    for item in sub.tamices:
+        if item.marca or item.cantidad:
+            db.add(models.TamizOrden(
+                proceso_id=nuevo.id,
+                marca=item.marca,
+                cantidad=item.cantidad,
+                unidad_conteo=item.unidad_conteo or "Unidad",
+            ))
+    registrar_interaccion_cliente(db, parent.id_cliente, "Sub-ODS creada", f"ODS {parent.ods}: {sub.tipo_sub_ods}")
+    db.commit()
+    return {"mensaje": "Sub-ODS creada", "id": nuevo.id, "ods": parent.ods}
 
 
 @router.post("/{ods_id}/diagnosticar")

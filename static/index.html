@@ -75,8 +75,7 @@
                         <hr>
                         <form id="formOrdenTecnica">
                             <p class="fw-bold mb-2">Nueva orden especializada</p>
-                            <input class="form-control mb-2" id="tecOdsNueva" placeholder="Numero ODS" required>
-                            <select class="form-select mb-2" id="tecClienteNueva" required></select>
+                            <select class="form-select mb-2" id="tecOdsMadreNueva" onchange="actualizarEstadoFormularioSubOds()" required></select>
                             <select class="form-select mb-2" id="tecTipoOrdenNueva" onchange="toggleTamicesTecnico()" required>
                                 <option value="Mantenimiento de compresor">Mantenimiento de compresor</option>
                                 <option value="Llenado de tamices">Llenado de tamices</option>
@@ -86,7 +85,7 @@
                                 <div class="window-head"><h2 class="window-title">Tamices</h2><button class="btn btn-sm btn-outline-primary" type="button" onclick="agregarFilaTamizTecnico()">Agregar</button></div>
                                 <div class="table-wrap" style="max-height: 180px;"><table class="table table-sm"><thead><tr><th>Marca</th><th>Cant.</th><th>Conteo</th><th></th></tr></thead><tbody id="tablaTamicesTecnico"></tbody></table></div>
                             </div>
-                            <button class="btn btn-dark w-100 mt-2" type="submit">Crear orden</button>
+                            <button class="btn btn-dark w-100 mt-2" type="submit">Crear sub-ODS</button>
                         </form>
                     </div>
                 </aside>
@@ -162,7 +161,7 @@
     <script>
         const SESSION_KEY = 'oxyliveSession';
         const $ = (id) => document.getElementById(id);
-        let modalTech, modalFinalizar, repuestosGlobales = [], ordenesTecnico = [], clientesTecnico = [], sesionActual = null;
+        let modalTech, modalFinalizar, repuestosGlobales = [], ordenesTecnico = [], sesionActual = null;
 
         function limpiarTexto(valor) {
             return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -177,18 +176,36 @@
             catch { return null; }
         }
 
-        function rolEsTecnico(rol) {
-            return ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'].includes((rol || '').toUpperCase());
+        const ROLES_TECNICOS = ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'];
+
+        function rolesDesde(valor) {
+            if (Array.isArray(valor)) return valor.map(r => normalizarTexto(r)).filter(Boolean);
+            if (valor && typeof valor === 'object') return rolesDesde(valor.roles?.length ? valor.roles : valor.rol);
+            return String(valor || '').split(',').map(r => normalizarTexto(r)).filter(Boolean);
+        }
+
+        function rolesVisibles(valor) {
+            if (Array.isArray(valor)) return valor.filter(Boolean);
+            if (valor && typeof valor === 'object') return rolesVisibles(valor.roles?.length ? valor.roles : valor.rol);
+            return String(valor || '').split(',').map(r => r.trim()).filter(Boolean);
+        }
+
+        function textoRoles(valor) {
+            return rolesVisibles(valor).join(', ');
+        }
+
+        function rolEsTecnico(valor) {
+            return rolesDesde(valor).some(rol => ROLES_TECNICOS.includes(rol));
         }
 
         function protegerOperativo() {
             const sesion = obtenerSesion();
             if (!sesion) { window.location.href = '/login'; return null; }
-            if (!rolEsTecnico(sesion.rol)) { window.location.href = '/admin'; return null; }
+            if (!rolEsTecnico(sesion)) { window.location.href = '/admin'; return null; }
             sesionActual = sesion;
-            $('sessionTechLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
+            $('sessionTechLabel').innerText = `${sesion.nombre} - ${textoRoles(sesion)}`;
             $('perfilTecnicoNombre').innerText = sesion.nombre;
-            $('perfilTecnicoRol').innerText = sesion.rol;
+            $('perfilTecnicoRol').innerText = textoRoles(sesion);
             ajustarOrdenesPermitidas();
             return sesion;
         }
@@ -202,16 +219,22 @@
             const sesion = sesionActual || protegerOperativo();
             if (!sesion) return;
             try {
-                const [resProc, resInv, resCli] = await Promise.all([fetch('/procesos'), fetch('/inventario'), fetch('/clientes/')]);
+                const [resProc, resInv] = await Promise.all([fetch('/procesos'), fetch('/inventario')]);
                 const procesos = await resProc.json();
                 repuestosGlobales = await resInv.json();
-                clientesTecnico = await resCli.json();
-                $('tecClienteNueva').innerHTML = clientesTecnico.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)} - ${limpiarTexto(c.nit)}</option>`).join('');
                 ordenesTecnico = procesos.filter(p => Number(p.id_trabajador_asignado) === Number(sesion.id));
+                renderSelectOdsMadre();
                 renderOrdenesTecnico();
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        function renderSelectOdsMadre() {
+            const madres = ordenesTecnico.filter(p => !p.es_sub_ods);
+            $('tecOdsMadreNueva').innerHTML = madres.map(p => `<option value="${p.id}">ODS #${limpiarTexto(p.ods)} - ${limpiarTexto(p.cliente)} - ${limpiarTexto(p.tipo_equipo || 'Equipo')}</option>`).join('');
+            if (!madres.length) $('tecOdsMadreNueva').innerHTML = '<option value="">Sin ODS madre asignada</option>';
+            actualizarEstadoFormularioSubOds();
         }
 
         function renderOrdenesTecnico() {
@@ -248,7 +271,7 @@
                 } else if (estado.includes('FINALIZADO')) {
                     pill = 'pill-green'; progress = 'bg-success'; accion = '<span class="pill pill-green">Finalizada</span>';
                 }
-                return `<tr><td><span class="pill pill-dark">#${limpiarTexto(p.ods)}</span></td><td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong></td><td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small>${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')}</small>${renderTamicesResumen(p.tamices)}<br><small class="text-muted">${limpiarTexto(p.tipo_tarea)}</small></td><td><div class="progress"><div class="progress-bar ${progress}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td><td><span class="pill ${pill}">${limpiarTexto(p.estado)}</span></td><td>${accion}</td></tr>`;
+                return `<tr><td><span class="pill pill-dark">#${limpiarTexto(p.ods)}</span>${p.es_sub_ods ? '<br><span class="pill pill-blue mt-1">Sub-ODS</span>' : ''}</td><td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong></td><td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small>${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')}</small>${renderTamicesResumen(p.tamices)}<br><small class="text-muted">${limpiarTexto(p.tipo_tarea)}</small></td><td><div class="progress"><div class="progress-bar ${progress}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td><td><span class="pill ${pill}">${limpiarTexto(p.estado)}</span></td><td>${accion}</td></tr>`;
             }).join('') || '<tr><td colspan="6" class="empty-state">No tienes ODS con estos filtros.</td></tr>';
         }
 
@@ -267,7 +290,7 @@
         }
 
         function configurarDiagnosticoPorOrden(orden) {
-            const texto = normalizarTexto(`${orden?.modalidad_servicio || ''} ${orden?.tipo_equipo || ''} ${sesionActual?.rol || ''}`);
+            const texto = normalizarTexto(`${orden?.modalidad_servicio || ''} ${orden?.tipo_equipo || ''} ${textoRoles(sesionActual)}`);
             const esTamiz = texto.includes('TAMIZ') || texto.includes('RECARGA') || texto.includes('LLENADO');
             const esCompresor = texto.includes('COMPRESOR');
             document.querySelectorAll('.diag-compresor').forEach(el => el.classList.toggle('d-none', esTamiz && !esCompresor));
@@ -277,17 +300,34 @@
             $('techTamiz').value = esCompresor && !esTamiz ? 'No aplica' : 'Operativo';
         }
 
+        function opcionesSubOdsPermitidas() {
+            const roles = rolesDesde(sesionActual);
+            const puedeEspecializada = roles.includes('TECNICO DE ESTACIONARIOS') || roles.includes('TECNICO DE PORTATILES');
+            const opciones = [];
+            if (puedeEspecializada || roles.includes('TECNICO DE COMPRESORES')) opciones.push('Mantenimiento de compresor');
+            if (puedeEspecializada || roles.includes('TECNICO DE LLENA')) opciones.push('Llenado de tamices');
+            return [...new Set(opciones)];
+        }
+
         function ajustarOrdenesPermitidas() {
-            const rol = (sesionActual?.rol || '').toUpperCase();
             const select = $('tecTipoOrdenNueva');
             if (!select) return;
-            if (rol === 'TECNICO DE COMPRESORES') select.innerHTML = '<option value="Mantenimiento de compresor">Mantenimiento de compresor</option>';
-            else if (rol === 'TECNICO DE LLENA') select.innerHTML = '<option value="Llenado de tamices">Llenado de tamices</option>';
-            else select.innerHTML = '<option value="">Este perfil no crea ordenes especializadas</option>';
-            $('formOrdenTecnica').querySelectorAll('input, textarea, button').forEach(el => {
-                if (el.id !== 'filtroTecnicoTexto') el.disabled = !select.value;
-            });
+            const opciones = opcionesSubOdsPermitidas();
+            select.innerHTML = opciones.length
+                ? opciones.map(opcion => `<option value="${opcion}">${opcion}</option>`).join('')
+                : '<option value="">Este cargo no crea sub-ODS especializadas</option>';
+            select.disabled = !opciones.length;
+            actualizarEstadoFormularioSubOds();
             toggleTamicesTecnico();
+        }
+
+        function actualizarEstadoFormularioSubOds() {
+            const sinOrdenMadre = !$('tecOdsMadreNueva')?.value;
+            const sinTipo = !$('tecTipoOrdenNueva')?.value;
+            const bloqueado = sinOrdenMadre || sinTipo;
+            $('tecOdsMadreNueva').disabled = !ordenesTecnico.some(p => !p.es_sub_ods);
+            $('tecDescNueva').disabled = bloqueado;
+            $('formOrdenTecnica').querySelector('button[type="submit"]').disabled = bloqueado;
         }
 
         function esOrdenTamicesTecnico() {
@@ -340,16 +380,11 @@
         $('formOrdenTecnica').addEventListener('submit', async (e) => {
             e.preventDefault();
             const servicio = $('tecTipoOrdenNueva').value;
-            const esTamiz = normalizarTexto(servicio).includes('TAMIZ');
-            await fetch('/procesos/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
-                ods: $('tecOdsNueva').value,
+            const odsMadreId = $('tecOdsMadreNueva').value;
+            if (!odsMadreId) { alert('Selecciona una ODS madre asignada.'); return; }
+            await fetch(`/procesos/${odsMadreId}/sub-ods`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                tipo_sub_ods: servicio,
                 tipo_tarea: $('tecDescNueva').value,
-                tipo_equipo: esTamiz ? 'Lote de tamices' : 'Compresor',
-                marca_equipo: '',
-                modelo_equipo: '',
-                horas_ingreso: 0,
-                modalidad_servicio: servicio,
-                id_cliente: parseInt($('tecClienteNueva').value),
                 id_trabajador_asignado: parseInt(sesionActual.id),
                 tamices: obtenerTamicesTecnico()
             }) });

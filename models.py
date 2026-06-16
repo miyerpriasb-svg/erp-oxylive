@@ -37,6 +37,8 @@ class Proceso(Base):
     modelo_equipo = Column(String)
     horas_ingreso = Column(Float)
     modalidad_servicio = Column(String)
+    parent_proceso_id = Column(Integer)
+    sub_ods_tipo = Column(String)
     id_cliente = Column(Integer)
     id_trabajador_asignado = Column(Integer)
     estado = Column(String)
