@@ -1,0 +1,23 @@
+# Sistema operativo y editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Dependencias y builds futuros
+node_modules/
+dist/
+build/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Archivos locales sensibles
+.env
+.env.*
+*.log
+
+# Archivos de revision local
+_revision_zip_erp_oxylive/
+erp-oxylive-web.zip

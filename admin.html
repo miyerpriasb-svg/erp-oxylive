@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Oxylive ERP | Centro de Operaciones</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-page="admin">
+    <header class="topbar">
+      <div class="brand-inline">
+        <div class="brand-mark small">O2</div>
+        <div>
+          <strong>Centro de Operaciones</strong>
+          <span>Administración Bogotá</span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span id="sessionName"></span>
+        <button id="logoutBtn" class="ghost-button" type="button">Salir</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <nav class="module-tabs" aria-label="Módulos administrativos">
+        <button class="tab-button is-active" type="button" data-tab="dashboard">Resumen</button>
+        <button class="tab-button" type="button" data-tab="orders">Gestión ODS</button>
+        <button class="tab-button" type="button" data-tab="inventory" data-roles="Administrador,Coordinador">Inventario</button>
+        <button class="tab-button" type="button" data-tab="directory">Clientes</button>
+      </nav>
+
+      <section id="dashboard" class="tab-panel is-active">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Vista integral</p>
+            <h1>Operación en curso</h1>
+          </div>
+          <button id="resetDemoBtn" class="secondary-action" type="button">Restaurar datos demo</button>
+        </div>
+        <div id="dashboardCards" class="summary-grid"></div>
+        <div class="two-column">
+          <section class="surface">
+            <h2>Flujo de estados</h2>
+            <div class="flow-line">
+              <span>Pendiente diagnóstico</span>
+              <span>Esperando aprobación</span>
+              <span>Aprobado / ejecución</span>
+              <span>Finalizado</span>
+            </div>
+          </section>
+          <section class="surface">
+            <h2>Alertas de stock</h2>
+            <div id="stockAlerts" class="compact-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="orders" class="tab-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Módulo 2</p>
+            <h1>Gestión de ODS</h1>
+          </div>
+        </div>
+        <div class="split-layout">
+          <section class="surface">
+            <h2>Nueva orden de servicio</h2>
+            <form id="odsForm" class="stack">
+              <div class="form-grid">
+                <label>
+                  Cliente
+                  <select id="odsClient" required></select>
+                </label>
+                <label>
+                  Tipo de equipo
+                  <select id="odsType" required>
+                    <option value="concentrador-estacionario">Concentrador estacionario</option>
+                    <option value="concentrador-portatil">Concentrador portátil</option>
+                    <option value="lote-tamices">Lote de tamices</option>
+                  </select>
+                </label>
+                <label>
+                  Técnico asignado
+                  <select id="odsTech" required></select>
+                </label>
+                <label>
+                  Vía de atención
+                  <select id="odsRoute" required>
+                    <option value="campo">Campo con aprobación</option>
+                    <option value="taller">Taller fast-track</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="equipmentFields"></div>
+              <label>
+                Observación de recepción
+                <textarea id="odsNotes" rows="3" placeholder="Condiciones de ingreso, novedades o solicitud del cliente"></textarea>
+              </label>
+              <button class="primary-action" type="submit">Crear ODS</button>
+            </form>
+          </section>
+
+          <section class="surface">
+            <h2>Órdenes activas</h2>
+            <div id="adminOrders" class="order-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="inventory" class="tab-panel" data-roles="Administrador,Coordinador">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Módulo 3</p>
+            <h1>Inventario y Kardex</h1>
+          </div>
+        </div>
+        <div class="split-layout">
+          <section class="surface">
+            <h2>Catálogo y abastecimiento</h2>
+            <form id="partForm" class="stack">
+              <div class="form-grid">
+                <label>Repuesto<input id="partName" required></label>
+                <label>Unidad<input id="partUnit" required placeholder="unidad, filtro, kit"></label>
+                <label>Stock mínimo<input id="partMin" type="number" min="0" required></label>
+                <label>Entrada inicial<input id="partQty" type="number" min="0" required></label>
+              </div>
+              <button class="primary-action" type="submit">Agregar repuesto</button>
+            </form>
+            <form id="manualMovementForm" class="stack subform">
+              <h3>Movimiento manual</h3>
+              <div class="form-grid">
+                <label>Repuesto<select id="movementPart"></select></label>
+                <label>Tipo<select id="movementType"><option value="entrada">Entrada</option><option value="salida">Salida</option></select></label>
+                <label>Cantidad<input id="movementQty" type="number" min="1" required></label>
+                <label>Motivo<input id="movementReason" required placeholder="Compra, merma, garantía"></label>
+              </div>
+              <button class="secondary-action" type="submit">Registrar movimiento</button>
+            </form>
+          </section>
+          <section class="surface">
+            <h2>Stock actual</h2>
+            <div id="inventoryTable" class="data-table"></div>
+            <h2>Kardex</h2>
+            <div id="kardexList" class="compact-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="directory" class="tab-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Módulo 4</p>
+            <h1>Directorio</h1>
+          </div>
+        </div>
+        <div class="split-layout">
+          <section class="surface" data-roles="Administrador,Coordinador">
+            <h2>Clientes</h2>
+            <form id="clientForm" class="stack">
+              <div class="form-grid">
+                <label>Razón social<input id="clientName" required></label>
+                <label>NIT<input id="clientNit" required></label>
+              </div>
+              <button class="primary-action" type="submit">Crear cliente</button>
+            </form>
+            <div id="clientList" class="compact-list"></div>
+          </section>
+          <section class="surface">
+            <h2>Equipo interno</h2>
+            <form id="userForm" class="stack">
+              <div class="form-grid">
+                <label>Nombre<input id="userName" required></label>
+                <label>Usuario<input id="userLogin" required></label>
+                <label>Rol
+                  <select id="userRole">
+                    <option>Administrador</option>
+                    <option>Coordinador</option>
+                    <option>Recepcionista</option>
+                    <option>Tecnico Campo</option>
+                    <option>Tecnico Taller</option>
+                  </select>
+                </label>
+              </div>
+              <button class="primary-action" type="submit">Crear usuario</button>
+            </form>
+            <div id="userList" class="compact-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

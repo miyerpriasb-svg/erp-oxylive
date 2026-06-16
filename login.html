@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Oxylive ERP | Acceso</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-panel" aria-labelledby="login-title">
+        <div class="brand-block">
+          <div class="brand-mark">O2</div>
+          <div>
+            <p class="eyebrow">Oxylive Service LLC</p>
+            <h1 id="login-title">Acceso ERP</h1>
+          </div>
+        </div>
+
+        <form id="loginForm" class="stack" autocomplete="on">
+          <label>
+            Usuario
+            <input id="username" name="username" type="text" autocomplete="username" required>
+          </label>
+          <label>
+            Contraseña
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <button class="primary-action" type="submit">Ingresar</button>
+          <p id="loginError" class="form-error" role="alert" hidden></p>
+        </form>
+
+        <div class="demo-users" aria-label="Usuarios de prueba">
+          <p>Usuarios de prueba</p>
+          <div class="demo-grid">
+            <button type="button" data-fill-user="admin">Administrador</button>
+            <button type="button" data-fill-user="coordinador">Coordinador</button>
+            <button type="button" data-fill-user="recepcion">Recepcionista</button>
+            <button type="button" data-fill-user="campo">Tec. Campo</button>
+            <button type="button" data-fill-user="taller">Tec. Taller</button>
+          </div>
+          <small>Contraseña inicial: <strong>oxylive123</strong></small>
+        </div>
+      </section>
+      <aside class="login-aside">
+        <div class="metric-strip">
+          <article>
+            <strong>4</strong>
+            <span>Módulos conectados</span>
+          </article>
+          <article>
+            <strong>100%</strong>
+            <span>Trazabilidad ODS</span>
+          </article>
+          <article>
+            <strong>24/7</strong>
+            <span>Control operativo</span>
+          </article>
+        </div>
+      </aside>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

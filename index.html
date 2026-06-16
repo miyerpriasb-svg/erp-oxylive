@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Oxylive ERP | App Operativa</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-page="tech">
+    <header class="topbar">
+      <div class="brand-inline">
+        <div class="brand-mark small">O2</div>
+        <div>
+          <strong>App Operativa</strong>
+          <span>Campo y taller</span>
+        </div>
+      </div>
+      <div class="user-chip">
+        <span id="sessionName"></span>
+        <button id="logoutBtn" class="ghost-button" type="button">Salir</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="section-heading">
+        <div>
+          <p class="eyebrow">Módulo 2</p>
+          <h1>Mis órdenes de servicio</h1>
+        </div>
+      </section>
+
+      <section class="split-layout">
+        <div class="surface">
+          <h2>Trabajo asignado</h2>
+          <div id="techOrders" class="order-list"></div>
+        </div>
+        <div class="surface">
+          <h2>Registro técnico</h2>
+          <form id="techReportForm" class="stack">
+            <label>
+              ODS
+              <select id="reportOrder"></select>
+            </label>
+            <div class="form-grid">
+              <label>Válvulas<select id="checkValves"><option>Sin novedad</option><option>Requiere ajuste</option><option>Requiere cambio</option></select></label>
+              <label>Compresor<select id="checkCompressor"><option>Operativo</option><option>Ruidoso</option><option>No enciende</option></select></label>
+              <label>Filtros<select id="checkFilters"><option>Limpios</option><option>Saturados</option><option>Cambio realizado</option></select></label>
+            </div>
+            <label>
+              Reporte
+              <textarea id="techReport" rows="4" required placeholder="Diagnóstico o labor cumplida"></textarea>
+            </label>
+            <button class="primary-action" type="submit">Enviar diagnóstico</button>
+          </form>
+
+          <form id="closeOrderForm" class="stack subform">
+            <h3>Cierre de ODS</h3>
+            <label>Orden<select id="closeOrder"></select></label>
+            <div id="partsUsed" class="parts-used"></div>
+            <label>
+              Resultado final
+              <textarea id="closeNotes" rows="3" required placeholder="Trabajo finalizado, pruebas y entrega"></textarea>
+            </label>
+            <button class="success-action" type="submit">Cerrar ODS</button>
+          </form>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
