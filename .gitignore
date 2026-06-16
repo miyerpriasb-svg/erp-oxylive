@@ -16,6 +16,8 @@ venv/
 # Archivos locales sensibles
 .env
 .env.*
+*.db
+credentials.json
 *.log
 
 # Archivos de revision local
