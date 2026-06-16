@@ -191,8 +191,8 @@ def finalizar_ods(ods_id: int, data: FinalizarData, db: Session = Depends(get_db
 
 @router.delete("/{ods_id}")
 def eliminar_ods(ods_id: int, rol: str, db: Session = Depends(get_db)):
-    if (rol or "").upper() != "ADMINISTRADOR":
-        raise HTTPException(status_code=403, detail="Solo el administrador puede eliminar ODS")
+    if (rol or "").upper() != "GERENTE GENERAL":
+        raise HTTPException(status_code=403, detail="Solo Gerencia General puede eliminar ODS")
     proceso = db.query(models.Proceso).filter(models.Proceso.id == ods_id).first()
     if not proceso:
         raise HTTPException(status_code=404, detail="ODS no encontrada")

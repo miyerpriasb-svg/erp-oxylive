@@ -178,7 +178,7 @@
         }
 
         function rolEsTecnico(rol) {
-            return ['TECNICO', 'MANTENIMIENTO DE COMPRESOR', 'LLENADO DE TAMICES'].includes((rol || '').toUpperCase());
+            return ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'].includes((rol || '').toUpperCase());
         }
 
         function protegerOperativo() {
@@ -281,9 +281,12 @@
             const rol = (sesionActual?.rol || '').toUpperCase();
             const select = $('tecTipoOrdenNueva');
             if (!select) return;
-            if (rol === 'MANTENIMIENTO DE COMPRESOR') select.innerHTML = '<option value="Mantenimiento de compresor">Mantenimiento de compresor</option>';
-            else if (rol === 'LLENADO DE TAMICES') select.innerHTML = '<option value="Llenado de tamices">Llenado de tamices</option>';
-            else select.innerHTML = '<option value="Mantenimiento de compresor">Mantenimiento de compresor</option><option value="Llenado de tamices">Llenado de tamices</option>';
+            if (rol === 'TECNICO DE COMPRESORES') select.innerHTML = '<option value="Mantenimiento de compresor">Mantenimiento de compresor</option>';
+            else if (rol === 'TECNICO DE LLENA') select.innerHTML = '<option value="Llenado de tamices">Llenado de tamices</option>';
+            else select.innerHTML = '<option value="">Este perfil no crea ordenes especializadas</option>';
+            $('formOrdenTecnica').querySelectorAll('input, textarea, button').forEach(el => {
+                if (el.id !== 'filtroTecnicoTexto') el.disabled = !select.value;
+            });
             toggleTamicesTecnico();
         }
 

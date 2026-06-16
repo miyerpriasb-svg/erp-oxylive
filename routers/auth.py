@@ -9,11 +9,22 @@ router = APIRouter(prefix="/auth", tags=["Acceso"])
 DEFAULT_PASSWORD = "admin123"
 
 FALLBACK_USERS = {
-    "administrador": {"id": 0, "nombre": "Administrador Oxylive", "rol": "ADMINISTRADOR"},
+    "administrador": {"id": 0, "nombre": "Gerente General Oxylive", "rol": "GERENTE GENERAL"},
 }
 
-ROLES_ADMIN = {"ADMINISTRADOR", "COORDINADOR", "RECEPCIONISTA"}
-ROLES_TECNICOS = {"TECNICO", "MANTENIMIENTO DE COMPRESOR", "LLENADO DE TAMICES"}
+ROLES_ADMIN = {
+    "GERENTE GENERAL",
+    "COORDINADOR ADMINISTRATIVO",
+    "COORDINADOR COMERCIAL",
+    "CONTADOR",
+    "JURIDICO",
+}
+ROLES_TECNICOS = {
+    "TECNICO DE ESTACIONARIOS",
+    "TECNICO DE PORTATILES",
+    "TECNICO DE LLENA",
+    "TECNICO DE COMPRESORES",
+}
 ROLES_PERMITIDOS = ROLES_ADMIN | ROLES_TECNICOS
 
 

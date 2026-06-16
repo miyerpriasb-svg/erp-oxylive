@@ -20,7 +20,7 @@
             </div>
             <div class="topbar-actions">
                 <span id="sessionAdminLabel" class="session-pill"></span>
-                <input type="hidden" id="vistaAdminRol" value="ADMINISTRADOR">
+                <input type="hidden" id="vistaAdminRol" value="GERENTE GENERAL">
                 <button class="btn btn-light btn-sm" type="button" onclick="cargarTablas()">Actualizar</button>
                 <button class="btn btn-outline-light btn-sm" type="button" onclick="cerrarSesion()">Salir</button>
             </div>
@@ -100,7 +100,7 @@
                             <div class="window-head">
                                 <div>
                                     <h2 class="window-title">Bitacora de procesos</h2>
-                                    <p class="window-subtitle">Solo el administrador puede eliminar ordenes.</p>
+                                    <p class="window-subtitle">Solo Gerencia General puede eliminar ordenes.</p>
                                 </div>
                                 <span id="etiquetaFiltro" class="pill pill-blue d-none" role="button" onclick="toggleFiltroEstado(null, null)">Filtro activo</span>
                             </div>
@@ -244,7 +244,7 @@
                                 <label class="form-label" for="passwordUsuario">Contrasena</label>
                                 <input class="form-control mb-2" id="passwordUsuario" type="password" required>
                                 <label class="form-label" for="rolUsuario">Rol</label>
-                                <select class="form-select mb-3" id="rolUsuario"><option value="ADMINISTRADOR">Administrador</option><option value="COORDINADOR">Coordinador</option><option value="RECEPCIONISTA">Recepcionista</option><option value="TECNICO">Tecnico</option><option value="MANTENIMIENTO DE COMPRESOR">Mantenimiento de compresor</option><option value="LLENADO DE TAMICES">Llenado de tamices</option></select>
+                                <select class="form-select mb-3" id="rolUsuario"><option value="GERENTE GENERAL">Gerente general</option><option value="COORDINADOR ADMINISTRATIVO">Coordinador administrativo</option><option value="COORDINADOR COMERCIAL">Coordinador comercial</option><option value="CONTADOR">Contador</option><option value="JURIDICO">Juridico</option><option value="TECNICO DE ESTACIONARIOS">Tecnico de estacionarios</option><option value="TECNICO DE PORTATILES">Tecnico de portatiles</option><option value="TECNICO DE LLENA">Tecnico de llena</option><option value="TECNICO DE COMPRESORES">Tecnico de compresores</option></select>
                                 <div class="splitter">
                                     <button class="btn btn-primary" id="btnUsuarioSubmit" type="submit">Guardar usuario</button>
                                     <button class="btn btn-outline-secondary" type="button" onclick="limpiarUsuarioForm()">Limpiar</button>
@@ -306,7 +306,15 @@
         }
 
         function rolEsTecnico(rol) {
-            return ['TECNICO', 'MANTENIMIENTO DE COMPRESOR', 'LLENADO DE TAMICES'].includes((rol || '').toUpperCase());
+            return ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'].includes((rol || '').toUpperCase());
+        }
+
+        function puedeGestionarEquipo(rol) {
+            return (rol || '').toUpperCase() === 'GERENTE GENERAL';
+        }
+
+        function puedeAprobarOds(rol) {
+            return ['GERENTE GENERAL', 'COORDINADOR ADMINISTRATIVO'].includes((rol || '').toUpperCase());
         }
 
         function esOrdenTamices() {
@@ -355,7 +363,7 @@
             sesionActual = sesion;
             $('sessionAdminLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
             $('vistaAdminRol').value = (sesion.rol || '').toUpperCase();
-            if ((sesion.rol || '').toUpperCase() !== 'ADMINISTRADOR') $('tabEquipoNav')?.classList.add('d-none');
+            if (!puedeGestionarEquipo(sesion.rol)) $('tabEquipoNav')?.classList.add('d-none');
             return sesion;
         }
 
@@ -447,14 +455,14 @@
                 if (estado.includes('ESPERANDO')) {
                     estadoPill = 'pill-amber'; progressClass = 'bg-warning';
                     accion = `<button class="btn btn-sm btn-outline-primary" onclick="verDiagnostico(${p.id})">Ver reporte</button>`;
-                    if (['ADMINISTRADOR', 'COORDINADOR'].includes(perfilActual)) accion += `<button class="btn btn-sm btn-success" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar</button>`;
+                    if (puedeAprobarOds(perfilActual)) accion += `<button class="btn btn-sm btn-success" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar</button>`;
                 } else if (estado.includes('APROBADO')) {
                     estadoPill = 'pill-blue'; progressClass = 'bg-primary'; accion = `<span class="pill pill-blue">En ejecucion</span>`;
                 } else if (estado.includes('FINALIZADO')) {
                     estadoPill = 'pill-green'; progressClass = 'bg-success'; accion = `<span class="pill pill-green">Cerrada</span>`;
                 }
 
-                if (perfilActual === 'ADMINISTRADOR') accion += `<button class="btn btn-sm btn-outline-danger" onclick="eliminarOds(${p.id})">Eliminar</button>`;
+                if (perfilActual === 'GERENTE GENERAL') accion += `<button class="btn btn-sm btn-outline-danger" onclick="eliminarOds(${p.id})">Eliminar</button>`;
 
                 let tiempos = `<div class="small text-start"><strong>Ingreso:</strong> ${limpiarTexto(p.fecha_creacion || 'N/A')}`;
                 if (p.fecha_diagnostico) tiempos += `<br><span>Diag: ${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span>`;
@@ -545,7 +553,7 @@
 
         async function eliminarOds(id) {
             const rol = (sesionActual?.rol || '').toUpperCase();
-            if (rol !== 'ADMINISTRADOR') { alert('Solo el administrador puede eliminar ODS.'); return; }
+            if (rol !== 'GERENTE GENERAL') { alert('Solo Gerencia General puede eliminar ODS.'); return; }
             if (!confirm('Esta accion eliminara la ODS de la bitacora. Deseas continuar?')) return;
             const res = await fetch(`/procesos/${id}?rol=${rol}`, { method: 'DELETE' });
             if (!res.ok) { alert('No fue posible eliminar la ODS.'); return; }
@@ -576,7 +584,7 @@
             $('loginUsuario').value = usuario.username || '';
             $('passwordUsuario').value = '';
             $('passwordUsuario').required = false;
-            $('rolUsuario').value = usuario.rol || 'TECNICO';
+            $('rolUsuario').value = usuario.rol || 'TECNICO DE ESTACIONARIOS';
             $('btnUsuarioSubmit').textContent = 'Actualizar usuario';
         }
 
