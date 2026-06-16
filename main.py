@@ -1,39 +1,48 @@
 import os
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import database, models
-from routers import clientes, inventario, operaciones, usuarios
+from routers import auth, clientes, inventario, operaciones, usuarios
 
-# Crea las tablas en PostgreSQL automáticamente al arrancar
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI()
 
-# Le indicamos a FastAPI que configure la carpeta para soportar archivos estáticos
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.get("/", response_class=HTMLResponse)
-async def mostrar_portal(request: Request):
+
+def render_static_html(filename: str, error_label: str) -> HTMLResponse:
     try:
-        with open("static/index.html", "r", encoding="utf-8") as f:
+        with open(f"static/{filename}", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read(), status_code=200)
     except FileNotFoundError:
-        return HTMLResponse(content="<h1>Error: index.html no encontrado</h1>", status_code=404)
+        return HTMLResponse(content=f"<h1>Error: {error_label} no encontrado</h1>", status_code=404)
+
+
+@app.get("/")
+async def raiz():
+    return RedirectResponse(url="/login")
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def mostrar_login(request: Request):
+    return render_static_html("login.html", "login.html")
+
+
+@app.get("/operativo", response_class=HTMLResponse)
+async def mostrar_operativo(request: Request):
+    return render_static_html("index.html", "index.html")
+
 
 @app.get("/admin", response_class=HTMLResponse)
 async def mostrar_admin(request: Request):
-    try:
-        with open("static/admin.html", "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read(), status_code=200)
-    except FileNotFoundError:
-        return HTMLResponse(content="<h1>Error: admin.html no encontrado</h1>", status_code=404)
+    return render_static_html("admin.html", "admin.html")
 
-# ==========================================
-# CONEXIÓN DE LOS MÓDULOS INDEPENDIENTES
-# ==========================================
+
+app.include_router(auth.router)
 app.include_router(clientes.router)
 app.include_router(inventario.router)
 app.include_router(operaciones.router)
-app.include_router(usuarios.router)  # <--- ESTE ES EL CABLE QUE NOS FALTABA
+app.include_router(usuarios.router)

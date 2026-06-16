@@ -54,11 +54,13 @@
             <h2 class="mb-1 fw-bold">📊 Centro de Operaciones ERP</h2>
             <p class="mb-0 text-light opacity-75 small">Panel de control y trazabilidad en tiempo real</p>
         </div>
-        <div>
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+            <span id="sessionAdminLabel" class="text-white small opacity-75"></span>
             <select class="form-select bg-white text-dark border-0 fw-bold shadow-sm" id="vistaAdminRol" onchange="renderTablaProcesos()" style="cursor: pointer;">
-                <option value="COORDINADOR">👁️ Perfil: Coordinador (Autoriza)</option>
-                <option value="RECEPCIONISTA">👁️ Perfil: Recepción (Solo Creación)</option>
+                <option value="COORDINADOR">Perfil: Coordinador (autoriza)</option>
+                <option value="RECEPCIONISTA">Perfil: Recepcionista (creacion)</option>
             </select>
+            <button class="btn btn-light btn-sm fw-bold" type="button" onclick="cerrarSesion()">Salir</button>
         </div>
     </div>
 
@@ -138,8 +140,38 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        const SESSION_KEY = 'oxyliveSession';
         let procesosGlobales = [];
         let estadoFiltroActivo = null;
+
+        function obtenerSesion() {
+            try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+            catch { return null; }
+        }
+
+        function rolEsTecnico(rol) {
+            return ['TECNICO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
+        }
+
+        function protegerAdmin() {
+            const sesion = obtenerSesion();
+            if (!sesion) { window.location.href = '/login'; return null; }
+            if (rolEsTecnico(sesion.rol)) { window.location.href = '/operativo'; return null; }
+            document.getElementById('sessionAdminLabel').innerText = `${sesion.nombre} ? ${sesion.rol}`;
+            if ((sesion.rol || '').toUpperCase() === 'RECEPCIONISTA') {
+                document.getElementById('vistaAdminRol').value = 'RECEPCIONISTA';
+            }
+            return sesion;
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem(SESSION_KEY);
+            window.location.href = '/login';
+        }
+
+        function iniciarAdmin() {
+            if (protegerAdmin()) cargarTablas();
+        }
 
         async function cargarTablas() {
             try {
@@ -270,7 +302,7 @@
         document.getElementById('formAbastecerItem')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/${document.getElementById('selectAbastecerItem').value}/abastecer?cantidad=${document.getElementById('cantAbastecer').value}`, { method: 'POST' }); document.getElementById('formAbastecerItem').reset(); cargarTablas(); });
         document.getElementById('formSalidaManual')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/salida-manual?nombre=${document.getElementById('selSalidaRepuesto').value}&cantidad=${document.getElementById('cantSalida').value}&motivo=${document.getElementById('motivoSalida').value}`, { method: 'POST' }); document.getElementById('formSalidaManual').reset(); cargarTablas(); });
 
-        window.onload = cargarTablas;
+        window.onload = iniciarAdmin;
     </script>
 </body>
 </html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Oxylive ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/static/erp-ui.css" rel="stylesheet">
+    <style>
+        .login-layout {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: minmax(320px, 470px) minmax(320px, 1fr);
+            background: var(--ox-page);
+        }
+
+        .login-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: clamp(1.5rem, 4vw, 3.5rem);
+            background: #ffffff;
+            border-right: 1px solid var(--ox-line);
+        }
+
+        .login-visual {
+            display: flex;
+            align-items: end;
+            padding: clamp(1.5rem, 4vw, 3.5rem);
+            color: #ffffff;
+            background:
+                linear-gradient(135deg, rgba(20, 33, 43, 0.88), rgba(0, 94, 103, 0.88)),
+                radial-gradient(circle at 72% 24%, rgba(255,255,255,0.22), transparent 25%),
+                #0f2730;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .login-mark {
+            display: grid;
+            place-items: center;
+            width: 58px;
+            height: 58px;
+            border-radius: 8px;
+            color: #ffffff;
+            background: var(--ox-teal);
+            font-weight: 800;
+            margin-bottom: 1.2rem;
+        }
+
+        .demo-access {
+            display: grid;
+            gap: 0.55rem;
+            margin-top: 1rem;
+            color: var(--ox-muted);
+            font-size: 0.84rem;
+        }
+
+        .demo-access button {
+            border: 1px solid var(--ox-line);
+            border-radius: 7px;
+            background: #ffffff;
+            padding: 0.55rem 0.7rem;
+            text-align: left;
+            font-weight: 700;
+        }
+
+        @media (max-width: 860px) {
+            .login-layout { grid-template-columns: 1fr; }
+            .login-visual { min-height: 260px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="login-layout">
+        <section class="login-panel">
+            <div class="login-card">
+                <div class="login-mark">O2</div>
+                <p class="kpi-label mb-2">Oxylive Service LLC</p>
+                <h1 class="fw-bold mb-2">Ingreso al ERP</h1>
+                <p class="text-muted mb-4">Una sola entrada para direccionar al equipo administrativo y operativo.</p>
+
+                <form id="loginForm" class="d-grid gap-3">
+                    <div>
+                        <label class="form-label small fw-bold text-muted">Usuario</label>
+                        <input class="form-control" id="usuario" autocomplete="username" required>
+                    </div>
+                    <div>
+                        <label class="form-label small fw-bold text-muted">Contrasena</label>
+                        <input class="form-control" id="password" type="password" autocomplete="current-password" required>
+                    </div>
+                    <button class="btn btn-dark w-100 py-2" type="submit">Ingresar</button>
+                    <div id="loginError" class="alert alert-danger py-2 mb-0 d-none"></div>
+                </form>
+
+                <div class="demo-access">
+                    <strong>Accesos iniciales</strong>
+                    <button type="button" data-user="admin">admin / oxylive123 - Administrativo</button>
+                    <button type="button" data-user="coordinador">coordinador / oxylive123 - Coordinador</button>
+                    <button type="button" data-user="recepcion">recepcion / oxylive123 - Recepcion</button>
+                    <small>Los usuarios tecnicos creados en el ERP entran con su ID o nombre sin espacios y la misma clave temporal.</small>
+                </div>
+            </div>
+        </section>
+        <section class="login-visual">
+            <div>
+                <h2 class="fw-bold mb-3">Operacion conectada</h2>
+                <p class="mb-0 opacity-75">Bogota, campo y taller trabajando sobre la misma trazabilidad de ordenes, inventario y cierres.</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const SESSION_KEY = 'oxyliveSession';
+
+        document.querySelectorAll('[data-user]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.getElementById('usuario').value = button.dataset.user;
+                document.getElementById('password').value = 'oxylive123';
+            });
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const error = document.getElementById('loginError');
+            error.classList.add('d-none');
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario: document.getElementById('usuario').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                if (!response.ok) throw new Error('Usuario o contrasena incorrectos.');
+
+                const session = await response.json();
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+                window.location.href = session.redirect;
+            } catch (err) {
+                error.textContent = err.message || 'No fue posible iniciar sesion.';
+                error.classList.remove('d-none');
+            }
+        });
+    </script>
+</body>
+</html>

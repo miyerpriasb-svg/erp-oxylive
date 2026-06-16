@@ -59,10 +59,12 @@
             <h3 class="mb-1 fw-bold text-white">🛠️ App de Servicio Técnico</h3>
             <p class="mb-0 text-white opacity-75 small">Evaluación y Ejecución de Mantenimiento en Campo</p>
         </div>
-        <div style="min-width: 250px;">
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2" style="min-width: 280px;">
+            <span id="sessionTechLabel" class="text-white small opacity-75"></span>
             <select class="form-select bg-white text-dark border-0 shadow-sm fw-bold" id="selectOperador" onchange="cargarOrdenesTecnico()" style="cursor: pointer;">
-                <option value="">👤 Seleccione su Perfil...</option>
+                <option value="">Seleccione perfil operativo...</option>
             </select>
+            <button class="btn btn-light btn-sm fw-bold" type="button" onclick="cerrarSesion()">Salir</button>
         </div>
     </div>
 
@@ -157,15 +159,44 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const SESSION_KEY = 'oxyliveSession';
         let modalTech, modalFinalizar; let repuestosGlobales = [];
+
+        function obtenerSesion() {
+            try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+            catch { return null; }
+        }
+
+        function rolEsTecnico(rol) {
+            return ['TECNICO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
+        }
+
+        function protegerOperativo() {
+            const sesion = obtenerSesion();
+            if (!sesion) { window.location.href = '/login'; return null; }
+            if (!rolEsTecnico(sesion.rol)) { window.location.href = '/admin'; return null; }
+            document.getElementById('sessionTechLabel').innerText = `${sesion.nombre} ? ${sesion.rol}`;
+            return sesion;
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem(SESSION_KEY);
+            window.location.href = '/login';
+        }
         async function inicializarPanel() {
+            const sesion = protegerOperativo();
+            if (!sesion) return;
             try {
                 const res = await fetch('/usuarios'); const usuarios = await res.json(); const tecnicos = usuarios.filter(u => u.rol === 'TECNICO');
                 let selectHtml = '<option value="">👤 Seleccione su Perfil Operativo...</option>';
                 tecnicos.forEach(t => selectHtml += `<option value="${t.id}">${t.nombre}</option>`);
                 document.getElementById('selectOperador').innerHTML = selectHtml;
+                if (sesion.id) {
+                    document.getElementById('selectOperador').value = String(sesion.id);
+                }
                 modalTech = new bootstrap.Modal(document.getElementById('modalTechDiagnostico'));
                 modalFinalizar = new bootstrap.Modal(document.getElementById('modalFinalizarTarea'));
+                cargarOrdenesTecnico();
             } catch (e) { console.error(e); }
         }
 
