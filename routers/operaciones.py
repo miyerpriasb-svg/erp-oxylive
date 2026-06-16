@@ -27,6 +27,10 @@ def roles_usuario(rol: str):
     return [r.strip().upper() for r in (rol or "").split(",") if r.strip()]
 
 
+def normalizar_estado(valor: str):
+    return (valor or "").upper().replace("Ó", "O").replace("Ã“", "O")
+
+
 def buscar_tecnico_especialista(db: Session, rol_requerido: str, tecnico_id: Optional[int] = None):
     if tecnico_id:
         tecnico = db.query(models.Usuario).filter(models.Usuario.id == tecnico_id).first()
@@ -83,6 +87,16 @@ def sub_ods_pendientes_diagnostico(db: Session, proceso_id: int):
     sub_ods = db.query(models.Proceso).filter(models.Proceso.parent_proceso_id == proceso_id).all()
     estados_liberados = {"DIAGNOSTICO LIBERADO", "DIAGNÓSTICO LIBERADO", "FINALIZADO"}
     return [sub for sub in sub_ods if (sub.estado or "").upper() not in estados_liberados]
+
+
+def sub_ods_pendientes_diagnostico(db: Session, proceso_id: int):
+    sub_ods = db.query(models.Proceso).filter(models.Proceso.parent_proceso_id == proceso_id).all()
+    pendientes = []
+    for sub in sub_ods:
+        estado = normalizar_estado(sub.estado)
+        if "LIBERADO" not in estado and "FINALIZADO" not in estado:
+            pendientes.append(sub)
+    return pendientes
 
 
 def resumen_diagnosticos_sub_ods(db: Session, proceso_id: int):

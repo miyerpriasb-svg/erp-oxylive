@@ -185,6 +185,8 @@
         const SESSION_KEY = 'oxyliveSession';
         const $ = (id) => document.getElementById(id);
         let modalTech, modalFinalizar, repuestosGlobales = [], procesosTecnicoTodos = [], ordenesTecnico = [], usuariosTecnicos = [], sesionActual = null;
+        let refreshTecnicoTimer = null;
+        let cargandoOrdenesTecnico = false;
 
         function limpiarTexto(valor) {
             return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -243,8 +245,10 @@
         }
 
         async function cargarOrdenesTecnico() {
+            if (cargandoOrdenesTecnico) return;
+            cargandoOrdenesTecnico = true;
             const sesion = sesionActual || protegerOperativo();
-            if (!sesion) return;
+            if (!sesion) { cargandoOrdenesTecnico = false; return; }
             try {
                 const [resProc, resInv, resUsu] = await Promise.all([fetch('/procesos'), fetch('/inventario'), fetch('/usuarios')]);
                 const procesos = await resProc.json();
@@ -257,13 +261,17 @@
                 renderOrdenesTecnico();
             } catch (e) {
                 console.error(e);
+            } finally {
+                cargandoOrdenesTecnico = false;
             }
         }
 
         function renderSelectOdsMadre() {
+            const seleccionActual = $('tecOdsMadreNueva').value;
             const madres = ordenesTecnico.filter(p => !p.es_sub_ods);
             $('tecOdsMadreNueva').innerHTML = madres.map(p => `<option value="${p.id}">ODS #${limpiarTexto(p.ods)} - ${limpiarTexto(p.cliente)} - ${limpiarTexto(p.tipo_equipo || 'Equipo')}</option>`).join('');
             if (!madres.length) $('tecOdsMadreNueva').innerHTML = '<option value="">Sin ODS madre asignada</option>';
+            if (seleccionActual && madres.some(p => String(p.id) === String(seleccionActual))) $('tecOdsMadreNueva').value = seleccionActual;
             actualizarEstadoFormularioSubOds();
         }
 
@@ -275,10 +283,12 @@
         }
 
         function renderSelectEspecialistaDestino() {
+            const seleccionActual = $('tecEspecialistaDestino').value;
             const cargo = cargoDestinoPorServicio();
             const especialistas = usuariosTecnicos.filter(u => (u.activo || 'SI') !== 'NO' && cargo && usuarioTieneCargo(u, cargo));
             $('tecEspecialistaDestino').innerHTML = especialistas.map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(cargo)}</option>`).join('');
             if (!especialistas.length) $('tecEspecialistaDestino').innerHTML = `<option value="">Sin especialista ${limpiarTexto(cargo || 'disponible')}</option>`;
+            if (seleccionActual && especialistas.some(u => String(u.id) === String(seleccionActual))) $('tecEspecialistaDestino').value = seleccionActual;
             $('tecEspecialistaDestino').disabled = !especialistas.length;
             actualizarEstadoFormularioSubOds();
         }
@@ -328,8 +338,12 @@
         }
 
         function subOdsPendientesDe(parentId) {
-            const liberados = ['DIAGNOSTICO LIBERADO', 'FINALIZADO'];
-            return procesosTecnicoTodos.filter(p => Number(p.parent_proceso_id) === Number(parentId) && !liberados.includes(normalizarTexto(p.estado)));
+            return procesosTecnicoTodos.filter(p => Number(p.parent_proceso_id) === Number(parentId) && !estadoSubOdsLiberado(p.estado));
+        }
+
+        function estadoSubOdsLiberado(estado) {
+            const texto = normalizarTexto(estado);
+            return texto.includes('LIBERADO') || texto.includes('FINALIZADO');
         }
 
         function renderTamicesResumen(tamices = []) {
@@ -512,11 +526,27 @@
             cargarOrdenesTecnico();
         });
 
+        function iniciarActualizacionAutomaticaTecnico() {
+            if (refreshTecnicoTimer) clearInterval(refreshTecnicoTimer);
+            refreshTecnicoTimer = setInterval(() => {
+                if (!document.hidden) cargarOrdenesTecnico();
+            }, 8000);
+        }
+
+        window.addEventListener('focus', () => {
+            if (sesionActual) cargarOrdenesTecnico();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && sesionActual) cargarOrdenesTecnico();
+        });
+
         window.addEventListener('load', () => {
             if (protegerOperativo()) {
                 modalTech = new bootstrap.Modal($('modalTechDiagnostico'));
                 modalFinalizar = new bootstrap.Modal($('modalFinalizarTarea'));
                 cargarOrdenesTecnico();
+                iniciarActualizacionAutomaticaTecnico();
             }
         });
     </script>
