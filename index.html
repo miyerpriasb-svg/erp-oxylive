@@ -1,71 +1,297 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Oxylive ERP | App Operativa</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body data-page="tech">
-    <header class="topbar">
-      <div class="brand-inline">
-        <div class="brand-mark small">O2</div>
-        <div>
-          <strong>App Operativa</strong>
-          <span>Campo y taller</span>
-        </div>
-      </div>
-      <div class="user-chip">
-        <span id="sessionName"></span>
-        <button id="logoutBtn" class="ghost-button" type="button">Salir</button>
-      </div>
-    </header>
-
-    <main class="workspace">
-      <section class="section-heading">
-        <div>
-          <p class="eyebrow">Módulo 2</p>
-          <h1>Mis órdenes de servicio</h1>
-        </div>
-      </section>
-
-      <section class="split-layout">
-        <div class="surface">
-          <h2>Trabajo asignado</h2>
-          <div id="techOrders" class="order-list"></div>
-        </div>
-        <div class="surface">
-          <h2>Registro técnico</h2>
-          <form id="techReportForm" class="stack">
-            <label>
-              ODS
-              <select id="reportOrder"></select>
-            </label>
-            <div class="form-grid">
-              <label>Válvulas<select id="checkValves"><option>Sin novedad</option><option>Requiere ajuste</option><option>Requiere cambio</option></select></label>
-              <label>Compresor<select id="checkCompressor"><option>Operativo</option><option>Ruidoso</option><option>No enciende</option></select></label>
-              <label>Filtros<select id="checkFilters"><option>Limpios</option><option>Saturados</option><option>Cambio realizado</option></select></label>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Operativo - Oxylive ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">O2</div>
+                <div>
+                    <h1 class="brand-title">Panel Operativo</h1>
+                    <p class="brand-subtitle">Diagnostico, ejecucion, cierre y consumo de repuestos</p>
+                </div>
             </div>
-            <label>
-              Reporte
-              <textarea id="techReport" rows="4" required placeholder="Diagnóstico o labor cumplida"></textarea>
-            </label>
-            <button class="primary-action" type="submit">Enviar diagnóstico</button>
-          </form>
+            <div class="topbar-actions">
+                <span id="sessionTechLabel" class="session-pill"></span>
+                <button class="btn btn-light btn-sm" type="button" onclick="cargarOrdenesTecnico()">Actualizar</button>
+                <button class="btn btn-outline-light btn-sm" type="button" onclick="cerrarSesion()">Salir</button>
+            </div>
+        </header>
 
-          <form id="closeOrderForm" class="stack subform">
-            <h3>Cierre de ODS</h3>
-            <label>Orden<select id="closeOrder"></select></label>
-            <div id="partsUsed" class="parts-used"></div>
-            <label>
-              Resultado final
-              <textarea id="closeNotes" rows="3" required placeholder="Trabajo finalizado, pruebas y entrega"></textarea>
-            </label>
-            <button class="success-action" type="submit">Cerrar ODS</button>
-          </form>
-        </div>
-      </section>
+        <section class="workspace">
+            <div class="metrics-grid">
+                <div class="metric pending"><span class="metric-label">Pendientes</span><span class="metric-value" id="tecPendientes">0</span><span class="metric-line"></span></div>
+                <div class="metric waiting"><span class="metric-label">En aprobacion</span><span class="metric-value" id="tecAprobacion">0</span><span class="metric-line"></span></div>
+                <div class="metric running"><span class="metric-label">En ejecucion</span><span class="metric-value" id="tecEjecucion">0</span><span class="metric-line"></span></div>
+                <div class="metric done"><span class="metric-label">Finalizadas</span><span class="metric-value" id="tecFinalizadas">0</span><span class="metric-line"></span></div>
+            </div>
+
+            <div class="drawer-layout">
+                <aside class="window">
+                    <div class="window-head">
+                        <div>
+                            <h2 class="window-title">Sesion tecnica</h2>
+                            <p class="window-subtitle">El trabajo se filtra por el usuario autenticado.</p>
+                        </div>
+                    </div>
+                    <div class="window-body">
+                        <div class="mini-chart">
+                            <div class="mini-chart-label"><span>Usuario</span><span id="perfilTecnicoNombre"></span></div>
+                        </div>
+                        <div class="mini-chart mt-2">
+                            <div class="mini-chart-label"><span>Rol</span><span id="perfilTecnicoRol"></span></div>
+                        </div>
+                        <hr>
+                        <label class="form-label" for="filtroTecnicoTexto">Buscar en mis ODS</label>
+                        <input class="form-control" id="filtroTecnicoTexto" placeholder="ODS, cliente, equipo" oninput="renderOrdenesTecnico()">
+                        <label class="form-label mt-3" for="filtroTecnicoEstado">Estado</label>
+                        <select class="form-select" id="filtroTecnicoEstado" onchange="renderOrdenesTecnico()">
+                            <option value="">Todos</option>
+                            <option value="PENDIENTE">Pendiente diagnostico</option>
+                            <option value="ESPERANDO">Esperando aprobacion</option>
+                            <option value="APROBADO">En ejecucion</option>
+                            <option value="FINALIZADO">Finalizado</option>
+                        </select>
+                    </div>
+                </aside>
+
+                <section class="window">
+                    <div class="window-head">
+                        <div>
+                            <h2 class="window-title">Mis asignaciones</h2>
+                            <p class="window-subtitle">Ordenes activas y acciones disponibles para el tecnico.</p>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="table align-middle text-center">
+                            <thead><tr><th>ODS</th><th>Cliente</th><th>Servicio y equipo</th><th>Avance</th><th>Estado</th><th>Accion</th></tr></thead>
+                            <tbody id="tablaOrdenesTecnico"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </section>
     </main>
-    <script src="app.js"></script>
-  </body>
+
+    <div class="modal fade" id="modalTechDiagnostico" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Formulario de inspeccion tecnica</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="limpiarFormulario()"></button>
+                </div>
+                <form id="formTechDiagnostico">
+                    <div class="modal-body">
+                        <input type="hidden" id="techOdsId">
+                        <label class="form-label" for="techTipoEquipo">Arquitectura del equipo</label>
+                        <select class="form-select" id="techTipoEquipo" onchange="alternarSeccionesEquipo()" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Estacionario">Concentrador estacionario</option>
+                            <option value="Portatil">Concentrador portatil</option>
+                            <option value="Tamices">Lote de tamices</option>
+                            <option value="Recarga">Recarga</option>
+                        </select>
+
+                        <div id="diagnosticoDetalle" class="mt-3 d-none">
+                            <div class="splitter">
+                                <div><label class="form-label" for="techCompresor">Compresor</label><select class="form-select" id="techCompresor"><option>Operativo</option><option>Requiere mantenimiento</option><option>Critico</option><option>No aplica</option></select></div>
+                                <div><label class="form-label" for="techValvulas">Valvulas</label><select class="form-select" id="techValvulas"><option>Operativas</option><option>Fallo parcial</option><option>Atascada</option><option>No aplica</option></select></div>
+                            </div>
+                            <div class="splitter mt-3">
+                                <div><label class="form-label" for="techTamiz">Tamiz</label><select class="form-select" id="techTamiz"><option>Operativo</option><option>Baja concentracion</option><option>Requiere recarga</option><option>No aplica</option></select></div>
+                                <div><label class="form-label" for="techBateria">Bateria</label><select class="form-select" id="techBateria"><option>No aplica</option><option>Optima</option><option>Degradada</option><option>No detectada</option></select></div>
+                            </div>
+                        </div>
+                        <label class="form-label mt-3" for="techObs">Observaciones</label>
+                        <textarea class="form-control" id="techObs" rows="4" placeholder="Hallazgos, accesorios, seriales, pruebas realizadas..."></textarea>
+                    </div>
+                    <div class="modal-footer"><button type="submit" class="btn btn-primary w-100">Enviar a coordinacion</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalFinalizarTarea" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Cierre de ODS y repuestos utilizados</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formFinalizarTarea">
+                    <div class="modal-body">
+                        <input type="hidden" id="techOdsIdFinalizar">
+                        <p class="text-muted small">Selecciona los repuestos usados. El Kardex se descuenta automaticamente.</p>
+                        <div id="listaRepuestosTech" class="d-grid gap-2" style="max-height: 330px; overflow-y: auto;"></div>
+                    </div>
+                    <div class="modal-footer"><button type="submit" class="btn btn-success w-100">Finalizar ODS</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const SESSION_KEY = 'oxyliveSession';
+        const $ = (id) => document.getElementById(id);
+        let modalTech, modalFinalizar, repuestosGlobales = [], ordenesTecnico = [], sesionActual = null;
+
+        function limpiarTexto(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function normalizarTexto(valor) {
+            return String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ãƒ.|Ã‚./g, '').toUpperCase();
+        }
+
+        function obtenerSesion() {
+            try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+            catch { return null; }
+        }
+
+        function rolEsTecnico(rol) {
+            return ['TECNICO', 'OPERATIVO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
+        }
+
+        function protegerOperativo() {
+            const sesion = obtenerSesion();
+            if (!sesion) { window.location.href = '/login'; return null; }
+            if (!rolEsTecnico(sesion.rol)) { window.location.href = '/admin'; return null; }
+            sesionActual = sesion;
+            $('sessionTechLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
+            $('perfilTecnicoNombre').innerText = sesion.nombre;
+            $('perfilTecnicoRol').innerText = sesion.rol;
+            return sesion;
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem(SESSION_KEY);
+            window.location.href = '/login';
+        }
+
+        async function cargarOrdenesTecnico() {
+            const sesion = sesionActual || protegerOperativo();
+            if (!sesion) return;
+            try {
+                const [resProc, resInv] = await Promise.all([fetch('/procesos'), fetch('/inventario')]);
+                const procesos = await resProc.json();
+                repuestosGlobales = await resInv.json();
+                ordenesTecnico = procesos.filter(p => Number(p.id_trabajador_asignado) === Number(sesion.id));
+                renderOrdenesTecnico();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderOrdenesTecnico() {
+            const texto = normalizarTexto($('filtroTecnicoTexto').value);
+            const estadoFiltro = $('filtroTecnicoEstado').value;
+            let pendientes = 0, aprobacion = 0, ejecucion = 0, finalizadas = 0;
+            ordenesTecnico.forEach(p => {
+                const estado = normalizarTexto(p.estado);
+                if (estado.includes('PENDIENTE')) pendientes++;
+                else if (estado.includes('ESPERANDO')) aprobacion++;
+                else if (estado.includes('APROBADO')) ejecucion++;
+                else if (estado.includes('FINALIZADO')) finalizadas++;
+            });
+            $('tecPendientes').innerText = pendientes;
+            $('tecAprobacion').innerText = aprobacion;
+            $('tecEjecucion').innerText = ejecucion;
+            $('tecFinalizadas').innerText = finalizadas;
+
+            const visibles = ordenesTecnico.filter(p => {
+                const estado = normalizarTexto(p.estado);
+                const busca = normalizarTexto(`${p.ods} ${p.cliente} ${p.tipo_tarea} ${p.tipo_equipo} ${p.marca_equipo} ${p.modelo_equipo}`);
+                return (!texto || busca.includes(texto)) && (!estadoFiltro || estado.includes(estadoFiltro));
+            });
+
+            $('tablaOrdenesTecnico').innerHTML = visibles.map(p => {
+                const estado = normalizarTexto(p.estado);
+                let pill = 'pill-muted', progress = 'bg-secondary', accion = '<span class="pill pill-muted">En espera</span>';
+                if (estado.includes('PENDIENTE')) {
+                    accion = `<button class="btn btn-sm btn-dark" onclick="iniciarDiagnostico(${p.id})">Diagnosticar</button>`;
+                } else if (estado.includes('ESPERANDO')) {
+                    pill = 'pill-amber'; progress = 'bg-warning'; accion = '<span class="pill pill-amber">Coordinacion</span>';
+                } else if (estado.includes('APROBADO')) {
+                    pill = 'pill-blue'; progress = 'bg-primary'; accion = `<button class="btn btn-sm btn-success" onclick="abrirChecklistFinal(${p.id})">Cerrar ODS</button>`;
+                } else if (estado.includes('FINALIZADO')) {
+                    pill = 'pill-green'; progress = 'bg-success'; accion = '<span class="pill pill-green">Finalizada</span>';
+                }
+                return `<tr><td><span class="pill pill-dark">#${limpiarTexto(p.ods)}</span></td><td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong></td><td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small>${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')}</small><br><small class="text-muted">${limpiarTexto(p.tipo_tarea)}</small></td><td><div class="progress"><div class="progress-bar ${progress}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td><td><span class="pill ${pill}">${limpiarTexto(p.estado)}</span></td><td>${accion}</td></tr>`;
+            }).join('') || '<tr><td colspan="6" class="empty-state">No tienes ODS con estos filtros.</td></tr>';
+        }
+
+        function iniciarDiagnostico(id) {
+            $('techOdsId').value = id;
+            modalTech.show();
+        }
+
+        function alternarSeccionesEquipo() {
+            $('diagnosticoDetalle').classList.toggle('d-none', !$('techTipoEquipo').value);
+        }
+
+        function limpiarFormulario() {
+            $('formTechDiagnostico').reset();
+            $('diagnosticoDetalle').classList.add('d-none');
+        }
+
+        $('formTechDiagnostico').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = $('techOdsId').value;
+            const payload = {
+                tipo_equipo: $('techTipoEquipo').value,
+                estado_compresor: $('techCompresor').value,
+                estado_tamiz: $('techTamiz').value,
+                estado_valvulas: $('techValvulas').value,
+                estado_bateria: $('techBateria').value,
+                observaciones: $('techObs').value
+            };
+            await fetch(`/procesos/${id}/diagnosticar`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            modalTech.hide();
+            limpiarFormulario();
+            cargarOrdenesTecnico();
+        });
+
+        function abrirChecklistFinal(id) {
+            $('techOdsIdFinalizar').value = id;
+            $('listaRepuestosTech').innerHTML = repuestosGlobales.filter(r => Number(r.cantidad_disponible || 0) > 0).map(r => `<div class="repuesto-line"><label class="d-flex align-items-center gap-2 mb-0"><input class="form-check-input chk-repuesto" type="checkbox" value="${limpiarTexto(r.nombre_insumo)}" data-id="${r.id}"><span><strong>${limpiarTexto(r.nombre_insumo)}</strong><br><small class="text-muted">Disponible: ${r.cantidad_disponible} ${limpiarTexto(r.unidad_medida)}</small></span></label><input class="form-control cant-repuesto" id="cant_${r.id}" type="number" min="0.1" max="${r.cantidad_disponible}" step="any" placeholder="Cant." disabled></div>`).join('') || '<div class="empty-state">No hay stock disponible.</div>';
+            document.querySelectorAll('.chk-repuesto').forEach(chk => chk.addEventListener('change', (event) => {
+                const input = $(`cant_${event.target.dataset.id}`);
+                input.disabled = !event.target.checked;
+                input.value = event.target.checked ? 1 : '';
+            }));
+            modalFinalizar.show();
+        }
+
+        $('formFinalizarTarea').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = $('techOdsIdFinalizar').value;
+            const repuestos = [];
+            document.querySelectorAll('.chk-repuesto:checked').forEach(chk => {
+                const cantidad = parseFloat($(`cant_${chk.dataset.id}`).value);
+                if (cantidad > 0) repuestos.push({ nombre_insumo: chk.value, cantidad });
+            });
+            await fetch(`/procesos/${id}/finalizar`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ repuestos }) });
+            modalFinalizar.hide();
+            e.target.reset();
+            cargarOrdenesTecnico();
+        });
+
+        window.addEventListener('load', () => {
+            if (protegerOperativo()) {
+                modalTech = new bootstrap.Modal($('modalTechDiagnostico'));
+                modalFinalizar = new bootstrap.Modal($('modalFinalizarTarea'));
+                cargarOrdenesTecnico();
+            }
+        });
+    </script>
+</body>
 </html>
+

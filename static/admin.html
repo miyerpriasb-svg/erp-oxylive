@@ -3,206 +3,261 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Gerencial - ERP</title>
+    <title>Centro de Operaciones - Oxylive ERP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="/static/erp-ui.css" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #334155; }
-        .admin-header { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 2.5rem 2rem 4rem 2rem; border-bottom: 4px solid #3b82f6; border-radius: 0 0 24px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .main-container { margin-top: -40px; position: relative; z-index: 10; padding: 0 20px;}
-        .card { border-radius: 16px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.04); transition: transform 0.3s ease, box-shadow 0.3s ease; background: #ffffff; margin-bottom: 25px; }
-        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(0,0,0,0.08); }
-        .nav-tabs { background: white; padding: 8px; border-radius: 14px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: inline-flex; gap: 5px; margin-bottom: 30px; }
-        .nav-tabs .nav-link { border: none; border-radius: 10px; color: #64748b; font-weight: 600; padding: 10px 20px; transition: all 0.3s ease; }
-        .nav-tabs .nav-link:hover { background: #f8fafc; color: #3b82f6; }
-        .nav-tabs .nav-link.active { background: #eff6ff; color: #2563eb; box-shadow: 0 2px 8px rgba(59,130,246,0.15); }
-        .table { --bs-table-bg: transparent; margin-bottom: 0; }
-        .table thead th { border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; padding-top: 0;}
-        .table tbody tr { transition: background 0.2s; border-bottom: 1px solid #f1f5f9; }
-        .table tbody tr:hover { background-color: #f8fafc !important; }
-        .table-container { max-height: 450px; overflow-y: auto; padding-right: 5px;}
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .form-control, .form-select { border-radius: 10px; border: 1px solid #cbd5e1; padding: 0.6rem 1rem; box-shadow: none; font-size: 0.9rem;}
-        .form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
-        .btn { border-radius: 10px; font-weight: 600; transition: all 0.2s; }
-        .progress { border-radius: 20px; background-color: #e2e8f0; }
-        .badge { padding: 0.5em 0.8em; border-radius: 8px; font-weight: 600; letter-spacing: 0.3px; }
-        .accordion-item { border: 1px solid #e2e8f0; border-radius: 12px !important; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02);}
-        .accordion-button { font-weight: 600; color: #1e293b; background: white;}
-        .accordion-button:not(.collapsed) { background-color: #eff6ff; color: #2563eb; box-shadow: inset 0 -1px 0 rgba(0,0,0,.05); }
-        .accordion-button:focus { box-shadow: none; }
-        
-        /* Dashboard KPI Estilos Interactivos */
-        .kpi-card { border-left: 5px solid; padding-left: 1rem; cursor: pointer; user-select: none; }
-        .kpi-card:active { transform: scale(0.98); }
-        .kpi-pendiente { border-color: #64748b; }
-        .kpi-esperando { border-color: #f59e0b; }
-        .kpi-ejecucion { border-color: #3b82f6; }
-        .kpi-finalizado { border-color: #10b981; }
-        .kpi-dimmed { opacity: 0.4; transform: scale(0.98); box-shadow: none !important; }
-    </style>
 </head>
 <body>
-
-    <div class="admin-header d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="mb-1 fw-bold">📊 Centro de Operaciones ERP</h2>
-            <p class="mb-0 text-light opacity-75 small">Panel de control y trazabilidad en tiempo real</p>
-        </div>
-        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
-            <span id="sessionAdminLabel" class="text-white small opacity-75"></span>
-            <input type="hidden" id="vistaAdminRol" value="ADMINISTRADOR">
-            <button class="btn btn-light btn-sm fw-bold" type="button" onclick="cerrarSesion()">Salir</button>
-        </div>
-    </div>
-
-    <div class="main-container">
-        <div class="text-center text-lg-start">
-            <ul class="nav nav-tabs" id="modulosERP" role="tablist">
-                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#operaciones" type="button" onclick="cargarTablas()">⚙️ Operaciones</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventario" type="button" onclick="cargarTablas()">📦 Control de inventario</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#clientes" type="button" onclick="cargarTablas()">🏢 Directorio de clientes</button></li>
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#equipo" type="button" onclick="cargarTablas()">👤 Gestión de Equipo</button></li>
-            </ul>
-        </div>
-
-        <div class="tab-content" id="modulosERPContent">
-            <div class="tab-pane fade show active" id="operaciones" role="tabpanel">
-                <div class="row g-3 mb-4">
-                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-pendiente" onclick="toggleFiltroEstado('PENDIENTE DIAGNÓSTICO', this)"><div class="text-muted small fw-bold text-uppercase mb-1">🛠️ Pendiente Diagnóstico</div><div class="fs-2 fw-bold text-dark" id="kpiPendiente">0</div></div></div>
-                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-esperando" onclick="toggleFiltroEstado('ESPERANDO APROBACIÓN', this)"><div class="text-muted small fw-bold text-uppercase mb-1">⏳ Esperando Aprobación</div><div class="fs-2 fw-bold text-dark" id="kpiAprobacion">0</div></div></div>
-                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-ejecucion" onclick="toggleFiltroEstado('APROBADO - EN EJECUCIÓN', this)"><div class="text-muted small fw-bold text-uppercase mb-1">⚙️ En Taller (Ejecución)</div><div class="fs-2 fw-bold text-primary" id="kpiEjecucion">0</div></div></div>
-                    <div class="col-xl-3 col-sm-6"><div class="card p-3 shadow-sm h-100 kpi-card kpi-finalizado" onclick="toggleFiltroEstado('FINALIZADO', this)"><div class="text-muted small fw-bold text-uppercase mb-1">✔️ ODS Finalizadas</div><div class="fs-2 fw-bold text-success" id="kpiFinalizado">0</div></div></div>
+    <main class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">O2</div>
+                <div>
+                    <h1 class="brand-title">Centro de Operaciones ERP</h1>
+                    <p class="brand-subtitle">Administracion, ODS, clientes, inventario y personal</p>
                 </div>
+            </div>
+            <div class="topbar-actions">
+                <span id="sessionAdminLabel" class="session-pill"></span>
+                <input type="hidden" id="vistaAdminRol" value="ADMINISTRADOR">
+                <button class="btn btn-light btn-sm" type="button" onclick="cargarTablas()">Actualizar</button>
+                <button class="btn btn-outline-light btn-sm" type="button" onclick="cerrarSesion()">Salir</button>
+            </div>
+        </header>
 
-                <div class="row">
-                    <div class="col-lg-3">
-                        <div class="card p-4" style="border-top: 4px solid #0f172a;">
-                            <h6 class="fw-bold mb-3 text-dark">📝 Nueva Orden de Servicio</h6>
-                            <form id="formOrden">
-                                <div class="mb-3"><label class="form-label small fw-bold text-muted">Número ODS</label><input type="text" class="form-control" id="odsTarea" required></div>
-                                <div class="mb-3"><label class="form-label small fw-bold text-muted">Cliente Destino</label><select class="form-select" id="selectCliente" required></select></div>
-                                <div class="mb-3"><label class="form-label small fw-bold text-muted">Técnico Asignado</label><select class="form-select" id="selectTecnico" required></select></div>
-                                <div class="row g-2">
-                                    <div class="col-12"><label class="form-label small fw-bold text-muted">Tipo de equipo</label><select class="form-select" id="tipoEquipoOds" required><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select></div>
-                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Marca</label><input type="text" class="form-control" id="marcaEquipoOds" placeholder="Marca"></div>
-                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Modelo</label><input type="text" class="form-control" id="modeloEquipoOds" placeholder="Modelo"></div>
-                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Horas ingreso</label><input type="number" class="form-control" id="horasEquipoOds" min="0" step="0.1" value="0"></div>
-                                    <div class="col-6"><label class="form-label small fw-bold text-muted">Servicio</label><select class="form-select" id="modalidadServicioOds"><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select></div>
-                                </div>
-                                <div class="mb-4 mt-3"><label class="form-label small fw-bold text-muted">Requerimiento inicial</label><textarea class="form-control" id="descTarea" rows="2" required></textarea></div>
-                                <button type="submit" class="btn btn-dark w-100 shadow-sm">Generar y asignar ODS</button>
-                            </form>
-                        </div>
+        <section class="workspace">
+            <ul class="nav module-tabs" id="modulosERP" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#operaciones" type="button">Operaciones</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventario" type="button">Control de inventario</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#clientes" type="button">Directorio de clientes</button></li>
+                <li class="nav-item" id="tabEquipoNav"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#equipo" type="button">Gestion de equipo</button></li>
+            </ul>
+
+            <div class="tab-content">
+                <section class="tab-pane fade show active" id="operaciones" role="tabpanel">
+                    <div class="metrics-grid">
+                        <button class="metric pending text-start" type="button" data-filter-state="PENDIENTE" onclick="toggleFiltroEstado('PENDIENTE', this)"><span class="metric-label">Pendiente diagnostico</span><span class="metric-value" id="kpiPendiente">0</span><span class="metric-line"></span></button>
+                        <button class="metric waiting text-start" type="button" data-filter-state="ESPERANDO" onclick="toggleFiltroEstado('ESPERANDO', this)"><span class="metric-label">Esperando aprobacion</span><span class="metric-value" id="kpiAprobacion">0</span><span class="metric-line"></span></button>
+                        <button class="metric running text-start" type="button" data-filter-state="APROBADO" onclick="toggleFiltroEstado('APROBADO', this)"><span class="metric-label">En ejecucion</span><span class="metric-value" id="kpiEjecucion">0</span><span class="metric-line"></span></button>
+                        <button class="metric done text-start" type="button" data-filter-state="FINALIZADO" onclick="toggleFiltroEstado('FINALIZADO', this)"><span class="metric-label">Finalizadas</span><span class="metric-value" id="kpiFinalizado">0</span><span class="metric-line"></span></button>
                     </div>
-                    <div class="col-lg-9">
-                        <div class="card p-4 h-100">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold text-dark mb-0">📡 Bitácora de Procesos</h6>
-                                <span id="etiquetaFiltro" class="badge bg-primary d-none" style="cursor:pointer;" onclick="toggleFiltroEstado(null, null)">Filtro activo ✖</span>
+
+                    <div class="workspace-grid">
+                        <div>
+                            <div class="window">
+                                <div class="window-head">
+                                    <div>
+                                        <h2 class="window-title">Nueva ODS</h2>
+                                        <p class="window-subtitle">Asignacion completa por equipo, servicio y tecnico.</p>
+                                    </div>
+                                </div>
+                                <form id="formOrden" class="window-body">
+                                    <div class="splitter">
+                                        <div><label class="form-label" for="odsTarea">Numero ODS</label><input class="form-control" id="odsTarea" required></div>
+                                        <div><label class="form-label" for="modalidadServicioOds">Servicio</label><select class="form-select" id="modalidadServicioOds"><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select></div>
+                                    </div>
+                                    <div class="mt-3"><label class="form-label" for="selectCliente">Cliente</label><select class="form-select" id="selectCliente" required></select></div>
+                                    <div class="mt-3"><label class="form-label" for="selectTecnico">Tecnico asignado</label><select class="form-select" id="selectTecnico" required></select></div>
+                                    <div class="mt-3"><label class="form-label" for="tipoEquipoOds">Tipo de equipo</label><select class="form-select" id="tipoEquipoOds" required><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select></div>
+                                    <div class="splitter mt-3">
+                                        <div><label class="form-label" for="marcaEquipoOds">Marca</label><input class="form-control" id="marcaEquipoOds"></div>
+                                        <div><label class="form-label" for="modeloEquipoOds">Modelo</label><input class="form-control" id="modeloEquipoOds"></div>
+                                    </div>
+                                    <div class="mt-3"><label class="form-label" for="horasEquipoOds">Horas de ingreso</label><input class="form-control" id="horasEquipoOds" type="number" min="0" step="0.1" value="0"></div>
+                                    <div class="mt-3"><label class="form-label" for="descTarea">Requerimiento inicial</label><textarea class="form-control" id="descTarea" rows="3" required></textarea></div>
+                                    <button class="btn btn-dark w-100 mt-4" type="submit">Generar y asignar</button>
+                                </form>
                             </div>
-                            <div class="table-container">
+                        </div>
+
+                        <div class="window">
+                            <div class="window-head">
+                                <div>
+                                    <h2 class="window-title">Bitacora de procesos</h2>
+                                    <p class="window-subtitle">Solo el administrador puede eliminar ordenes.</p>
+                                </div>
+                                <span id="etiquetaFiltro" class="pill pill-blue d-none" role="button" onclick="toggleFiltroEstado(null, null)">Filtro activo</span>
+                            </div>
+                            <div class="window-body">
+                                <div class="toolbar">
+                                    <input class="form-control wide" id="filtroOdsTexto" placeholder="Buscar ODS, cliente, tecnico o equipo" oninput="renderTablaProcesos()">
+                                    <select class="form-select" id="filtroOdsServicio" onchange="renderTablaProcesos()"><option value="">Todos los servicios</option><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select>
+                                    <select class="form-select" id="filtroOdsEquipo" onchange="renderTablaProcesos()"><option value="">Todos los equipos</option><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select>
+                                </div>
+                            </div>
+                            <div class="table-wrap">
                                 <table class="table align-middle text-center">
-                                    <thead><tr><th>ODS</th><th>Requerimiento</th><th>Técnico</th><th>Tiempos (KPI)</th><th>Progreso</th><th>Estado</th><th>Acción Requerida</th></tr></thead>
+                                    <thead><tr><th>ODS</th><th>Servicio y equipo</th><th>Cliente / Tecnico</th><th>Tiempos</th><th>Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
                                     <tbody id="tablaProcesos"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </section>
 
-            <div class="tab-pane fade" id="inventario" role="tabpanel">
-                <div class="accordion" id="acordeonInventario">
-                    <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#colapsarStock">📊 Visor de Stock</button></h2><div id="colapsarStock" class="accordion-collapse collapse show" data-bs-parent="#acordeonInventario"><div class="accordion-body p-4"><div class="row g-3 mb-3"><div class="col-md-6"><input class="form-control" id="filtroInventarioTexto" placeholder="Buscar insumo" oninput="renderInventario()"></div><div class="col-md-3"><select class="form-select" id="filtroInventarioEstado" onchange="renderInventario()"><option value="">Todos los estados</option><option value="CRITICO">Critico</option><option value="OPTIMO">Optimo</option></select></div><div class="col-md-3"><button class="btn btn-outline-primary w-100" type="button" onclick="cargarTablas()">Actualizar</button></div></div><table class="table align-middle"><thead><tr><th>Insumo</th><th>Cant. Disponible</th><th>Unidad</th><th>Alerta</th><th>Estado</th></tr></thead><tbody id="tablaInventario"></tbody></table></div></div></div>
-                    <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#colapsarIngresos">📥 Gestión de Ingresos</button></h2><div id="colapsarIngresos" class="accordion-collapse collapse" data-bs-parent="#acordeonInventario"><div class="accordion-body bg-light p-4"><div class="row g-4"><div class="col-lg-5"><div class="card p-4"><form id="formAbastecerItem"><select class="form-select mb-3" id="selectAbastecerItem" required></select><input type="number" class="form-control mb-3" id="cantAbastecer" required><button type="submit" class="btn btn-success w-100">Registrar Entrada</button></form></div><div class="card p-4"><form id="formItem"><input type="text" class="form-control mb-2" id="nombreItem" required><input type="number" class="form-control mb-2" id="cantItem" required><input type="text" class="form-control mb-2" id="medidaItem" required><input type="number" class="form-control mb-3" id="alertaItem" required><button type="submit" class="btn btn-dark w-100">Añadir al Catálogo</button></form></div></div><div class="col-lg-7"><div class="card p-4 h-100"><table class="table table-sm text-center"><thead><tr><th>Fecha</th><th>Repuesto</th><th>Cantidad</th></tr></thead><tbody id="tablaIngresos"></tbody></table></div></div></div></div></div></div>
-                    <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#colapsarSalidas">📤 Salidas y Kardex</button></h2><div id="colapsarSalidas" class="accordion-collapse collapse" data-bs-parent="#acordeonInventario"><div class="accordion-body bg-light p-4"><div class="row g-4"><div class="col-lg-4"><div class="card p-4"><form id="formSalidaManual"><select class="form-select mb-3" id="selSalidaRepuesto" required></select><input type="number" class="form-control mb-3" id="cantSalida" required><input type="text" class="form-control mb-3" id="motivoSalida" required><button type="submit" class="btn btn-danger w-100">Confirmar Salida</button></form></div></div><div class="col-lg-8"><div class="card p-4 h-100"><table class="table table-sm text-center"><thead><tr><th>ODS / Tipo</th><th>Cliente</th><th>Repuesto</th><th>Cant.</th><th>Destino</th></tr></thead><tbody id="tablaMovimientosCompleta"></tbody></table></div></div></div></div></div></div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="clientes" role="tabpanel">
-                <div class="row g-4 mb-4" id="crmKpis"></div>
-                <div class="row g-4">
-                    <div class="col-xl-4">
-                        <div class="card p-4">
-                            <h6 class="fw-bold mb-3 text-dark">Ventana de cliente</h6>
-                            <form id="formCliente">
-                                <input type="text" class="form-control mb-3" id="nombreCliente" placeholder="Razon social" required>
-                                <select class="form-select mb-3" id="tipoCliente" required><option value="Juridico">Juridico</option><option value="Natural">Natural</option></select>
-                                <input type="text" class="form-control mb-3" id="nitCliente" placeholder="NIT o identificacion" required>
-                                <input type="email" class="form-control mb-3" id="correoCliente" placeholder="Correo electronico">
-                                <input type="text" class="form-control mb-4" id="telefonoCliente" placeholder="Numero de contacto">
-                                <button type="submit" class="btn btn-warning w-100">Guardar cliente</button>
-                            </form>
-                        </div>
-                        <div class="card p-4 mt-3">
-                            <h6 class="fw-bold mb-3 text-dark">Registrar interaccion</h6>
-                            <form id="formInteraccionCliente">
-                                <select class="form-select mb-3" id="interaccionCliente" required></select>
-                                <select class="form-select mb-3" id="interaccionTipo" required><option>Seguimiento</option><option>Llamada</option><option>Correo</option><option>Visita</option><option>Soporte</option><option>Comercial</option></select>
-                                <textarea class="form-control mb-3" id="interaccionDetalle" rows="2" placeholder="Detalle de la interaccion"></textarea>
-                                <button type="submit" class="btn btn-dark w-100">Agregar interaccion</button>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="col-xl-8">
-                        <div class="card p-4 mb-3">
-                            <div class="row g-3">
-                                <div class="col-md-4"><input class="form-control" id="filtroClienteTexto" placeholder="Buscar cliente, NIT, correo" oninput="renderClientesCRM()"></div>
-                                <div class="col-md-4"><select class="form-select" id="filtroClienteTipo" onchange="renderClientesCRM()"><option value="">Todos los tipos</option><option>Natural</option><option>Juridico</option></select></div>
-                                <div class="col-md-4"><select class="form-select" id="filtroClienteSegmento" onchange="renderClientesCRM()"><option value="">Frecuencia de interaccion</option><option>Nuevo</option><option>Esporadico</option><option>Frecuente</option></select></div>
+                <section class="tab-pane fade" id="inventario" role="tabpanel">
+                    <div class="workspace-grid wide-left mt-3">
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Control de inventario</h2><p class="window-subtitle">Catalogo, entradas, salidas y Kardex.</p></div></div>
+                                <div class="window-body">
+                                    <form id="formItem">
+                                        <label class="form-label" for="nombreItem">Nuevo insumo</label>
+                                        <input class="form-control mb-2" id="nombreItem" placeholder="Nombre del repuesto" required>
+                                        <div class="splitter">
+                                            <input class="form-control" id="cantItem" type="number" min="0" step="any" placeholder="Cantidad inicial" required>
+                                            <input class="form-control" id="alertaItem" type="number" min="0" step="any" placeholder="Stock minimo" required>
+                                        </div>
+                                        <input class="form-control mt-2" id="medidaItem" placeholder="Unidad de medida" required>
+                                        <button class="btn btn-dark w-100 mt-3" type="submit">Agregar al catalogo</button>
+                                    </form>
+                                    <hr>
+                                    <form id="formAbastecerItem">
+                                        <label class="form-label" for="selectAbastecerItem">Entrada de inventario</label>
+                                        <select class="form-select mb-2" id="selectAbastecerItem" required></select>
+                                        <input class="form-control mb-2" id="cantAbastecer" type="number" min="0.1" step="any" placeholder="Cantidad recibida" required>
+                                        <button class="btn btn-success w-100" type="submit">Registrar entrada</button>
+                                    </form>
+                                    <hr>
+                                    <form id="formSalidaManual">
+                                        <label class="form-label" for="selSalidaRepuesto">Salida manual</label>
+                                        <select class="form-select mb-2" id="selSalidaRepuesto" required></select>
+                                        <input class="form-control mb-2" id="cantSalida" type="number" min="0.1" step="any" placeholder="Cantidad" required>
+                                        <input class="form-control mb-2" id="motivoSalida" placeholder="Motivo" required>
+                                        <button class="btn btn-danger w-100" type="submit">Confirmar salida</button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                        <div class="card p-4 mb-3">
-                            <h6 class="fw-bold mb-3 text-dark">Filtros e indicadores de interacciones</h6>
-                            <div id="crmGraficos" class="row g-3"></div>
-                        </div>
-                        <div class="card p-4">
-                            <div class="table-container"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Cliente</th><th>Tipo</th><th>Contacto</th><th>Interacciones</th><th>Frecuencia</th></tr></thead><tbody id="tablaClientes"></tbody></table></div>
+
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Visor de stock</h2><p class="window-subtitle">Busqueda inmediata y alerta critica.</p></div></div>
+                                <div class="window-body">
+                                    <div class="toolbar">
+                                        <input class="form-control wide" id="filtroInventarioTexto" placeholder="Buscar insumo" oninput="renderInventario()">
+                                        <select class="form-select" id="filtroInventarioEstado" onchange="renderInventario()"><option value="">Todos los estados</option><option value="CRITICO">Critico</option><option value="OPTIMO">Optimo</option></select>
+                                    </div>
+                                </div>
+                                <div class="table-wrap" style="max-height: 360px;">
+                                    <table class="table align-middle"><thead><tr><th>Insumo</th><th>Disponible</th><th>Unidad</th><th>Minimo</th><th>Estado</th></tr></thead><tbody id="tablaInventario"></tbody></table>
+                                </div>
+                            </div>
+                            <div class="splitter mt-3">
+                                <div class="window">
+                                    <div class="window-head"><h2 class="window-title">Entradas</h2></div>
+                                    <div class="table-wrap" style="max-height: 270px;"><table class="table table-sm"><thead><tr><th>Fecha</th><th>Repuesto</th><th>Cant.</th></tr></thead><tbody id="tablaIngresos"></tbody></table></div>
+                                </div>
+                                <div class="window">
+                                    <div class="window-head"><h2 class="window-title">Kardex</h2></div>
+                                    <div class="table-wrap" style="max-height: 270px;"><table class="table table-sm"><thead><tr><th>Origen</th><th>Cliente/Fecha</th><th>Repuesto</th><th>Cant.</th><th>Destino</th></tr></thead><tbody id="tablaMovimientosCompleta"></tbody></table></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="equipo" role="tabpanel">
-                <div class="row g-4">
-                    <div class="col-lg-4">
-                        <div class="card p-4">
-                            <h6 class="fw-bold mb-3 text-dark">Panel administrador de usuarios</h6>
-                            <form id="formUsuario">
-                                <input type="text" class="form-control mb-3" id="nombreUsuario" placeholder="Nombre completo" required>
-                                <input type="text" class="form-control mb-3" id="loginUsuario" placeholder="Usuario de acceso" required>
-                                <input type="password" class="form-control mb-3" id="passwordUsuario" placeholder="Contrasena" required>
-                                <select class="form-select mb-4" id="rolUsuario"><option value="ADMINISTRATIVO">Administrativo</option><option value="OPERATIVO">Operativo</option><option value="COORDINADOR">Coordinador</option><option value="RECEPCIONISTA">Recepcionista</option></select>
-                                <button type="submit" class="btn btn-primary w-100">Registrar usuario</button>
+                </section>
+
+                <section class="tab-pane fade" id="clientes" role="tabpanel">
+                    <div class="metrics-grid" id="crmKpis"></div>
+                    <div class="workspace-grid">
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Ventana de cliente</h2><p class="window-subtitle">Datos de contacto y clasificacion.</p></div></div>
+                                <form id="formCliente" class="window-body">
+                                    <label class="form-label" for="nombreCliente">Razon social</label>
+                                    <input class="form-control mb-2" id="nombreCliente" required>
+                                    <div class="splitter">
+                                        <select class="form-select" id="tipoCliente" required><option value="Juridico">Juridico</option><option value="Natural">Natural</option></select>
+                                        <input class="form-control" id="nitCliente" placeholder="NIT o identificacion" required>
+                                    </div>
+                                    <input class="form-control mt-2" id="correoCliente" type="email" placeholder="Correo electronico">
+                                    <input class="form-control mt-2" id="telefonoCliente" placeholder="Numero de contacto">
+                                    <button class="btn btn-warning w-100 mt-3" type="submit">Guardar cliente</button>
+                                </form>
+                            </div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Nueva interaccion</h2><p class="window-subtitle">Llamada, seguimiento, soporte o visita.</p></div></div>
+                                <form id="formInteraccionCliente" class="window-body">
+                                    <select class="form-select mb-2" id="interaccionCliente" required></select>
+                                    <select class="form-select mb-2" id="interaccionTipo" required><option>Seguimiento</option><option>Llamada</option><option>Correo</option><option>Visita</option><option>Soporte</option><option>Comercial</option></select>
+                                    <textarea class="form-control" id="interaccionDetalle" rows="3" placeholder="Detalle de la interaccion"></textarea>
+                                    <button class="btn btn-dark w-100 mt-3" type="submit">Registrar interaccion</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Filtros de clientes</h2><p class="window-subtitle">Frecuencia, tipo y busqueda en tiempo real.</p></div></div>
+                                <div class="window-body">
+                                    <div class="toolbar">
+                                        <input class="form-control wide" id="filtroClienteTexto" placeholder="Buscar cliente, NIT, correo o telefono" oninput="renderClientesCRM()">
+                                        <select class="form-select" id="filtroClienteTipo" onchange="renderClientesCRM()"><option value="">Todos los tipos</option><option>Natural</option><option>Juridico</option></select>
+                                        <select class="form-select" id="filtroClienteSegmento" onchange="renderClientesCRM()"><option value="">Frecuencia de interaccion</option><option>Nuevo</option><option>Esporadico</option><option>Frecuente</option></select>
+                                    </div>
+                                    <div id="crmGraficos" class="splitter"></div>
+                                </div>
+                                <div class="table-wrap">
+                                    <table class="table align-middle text-center"><thead><tr><th>ID</th><th>Cliente</th><th>Tipo</th><th>Contacto</th><th>Interacciones</th><th>Frecuencia</th></tr></thead><tbody id="tablaClientes"></tbody></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tab-pane fade" id="equipo" role="tabpanel">
+                    <div class="workspace-grid mt-3">
+                        <div class="window">
+                            <div class="window-head"><div><h2 class="window-title">Panel administrador</h2><p class="window-subtitle">Crear y modificar usuarios del ERP.</p></div></div>
+                            <form id="formUsuario" class="window-body">
+                                <input type="hidden" id="usuarioEditandoId">
+                                <label class="form-label" for="nombreUsuario">Nombre completo</label>
+                                <input class="form-control mb-2" id="nombreUsuario" required>
+                                <label class="form-label" for="loginUsuario">Usuario</label>
+                                <input class="form-control mb-2" id="loginUsuario" required>
+                                <label class="form-label" for="passwordUsuario">Contrasena</label>
+                                <input class="form-control mb-2" id="passwordUsuario" type="password" required>
+                                <label class="form-label" for="rolUsuario">Rol</label>
+                                <select class="form-select mb-3" id="rolUsuario"><option value="ADMINISTRADOR">Administrador</option><option value="ADMINISTRATIVO">Administrativo</option><option value="OPERATIVO">Operativo</option><option value="TECNICO">Tecnico</option><option value="COORDINADOR">Coordinador</option><option value="RECEPCIONISTA">Recepcionista</option></select>
+                                <div class="splitter">
+                                    <button class="btn btn-primary" id="btnUsuarioSubmit" type="submit">Guardar usuario</button>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="limpiarUsuarioForm()">Limpiar</button>
+                                </div>
                             </form>
                         </div>
+
+                        <div class="window">
+                            <div class="window-head"><div><h2 class="window-title">Matriz de personal</h2><p class="window-subtitle">ID, usuario, rol, estado y acciones.</p></div></div>
+                            <div class="window-body">
+                                <div class="toolbar">
+                                    <input class="form-control wide" id="filtroUsuarioTexto" placeholder="Buscar usuario, nombre o rol" oninput="renderUsuarios()">
+                                    <select class="form-select" id="filtroUsuarioEstado" onchange="renderUsuarios()"><option value="">Todos</option><option value="SI">Activos</option><option value="NO">Inactivos</option></select>
+                                </div>
+                            </div>
+                            <div class="table-wrap">
+                                <table class="table align-middle text-center"><thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tablaUsuarios"></tbody></table>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-lg-8">
-                        <div class="card p-4"><div class="table-container"><table class="table text-center align-middle"><thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tablaUsuarios"></tbody></table></div></div>
-                    </div>
-                </div>
+                </section>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <div class="modal fade" id="modalVerDiagnostico" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-                <div class="modal-header text-white" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 16px 16px 0 0;">
-                    <h5 class="modal-title fw-bold">📋 Análisis Técnico en Campo</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Reporte tecnico</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
-                <div class="modal-body p-0" id="cuerpoVerDiagnostico"></div>
+                <div class="modal-body" id="cuerpoVerDiagnostico"></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         const SESSION_KEY = 'oxyliveSession';
         let procesosGlobales = [];
@@ -212,25 +267,36 @@
         let sesionActual = null;
         let estadoFiltroActivo = null;
 
-        function obtenerSesion() {
-            try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
-            catch { return null; }
+        const $ = (id) => document.getElementById(id);
+
+        function limpiarTexto(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function normalizarTexto(valor) {
+            return String(valor || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/Ã.|Â./g, '')
+                .toUpperCase();
         }
 
         function rolEsTecnico(rol) {
             return ['TECNICO', 'OPERATIVO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
         }
 
+        function obtenerSesion() {
+            try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+            catch { return null; }
+        }
+
         function protegerAdmin() {
             const sesion = obtenerSesion();
             if (!sesion) { window.location.href = '/login'; return null; }
-            sesionActual = sesion;
             if (rolEsTecnico(sesion.rol)) { window.location.href = '/operativo'; return null; }
-            document.getElementById('sessionAdminLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
-            document.getElementById('vistaAdminRol').value = (sesion.rol || '').toUpperCase();
-            if ((sesion.rol || '').toUpperCase() !== 'ADMINISTRADOR') {
-                document.querySelector('[data-bs-target="#equipo"]')?.closest('.nav-item')?.classList.add('d-none');
-            }
+            sesionActual = sesion;
+            $('sessionAdminLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
+            $('vistaAdminRol').value = (sesion.rol || '').toUpperCase();
+            if ((sesion.rol || '').toUpperCase() !== 'ADMINISTRADOR') $('tabEquipoNav')?.classList.add('d-none');
             return sesion;
         }
 
@@ -239,31 +305,11 @@
             window.location.href = '/login';
         }
 
-        function iniciarAdmin() {
-            if (protegerAdmin()) cargarTablas();
-        }
-
-        function limpiarTexto(valor) {
-            return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-        }
-
-        function normalizarTexto(valor) {
-            return String(valor || '')
-                .replaceAll('Ã“', 'O').replaceAll('Ã³', 'o').replaceAll('Ã', 'A').replaceAll('Ã¡', 'a')
-                .replaceAll('Ã‰', 'E').replaceAll('Ã©', 'e').replaceAll('Ã', 'I').replaceAll('Ã­', 'i')
-                .replaceAll('Ã‘', 'N').replaceAll('Ã±', 'n').replaceAll('Ãš', 'U').replaceAll('Ãº', 'u')
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
-        }
-
-        function normalizarEstado(estado) {
-            return normalizarTexto(estado);
-        }
-
         function difHoras(inicio, fin) {
             if (!inicio || !fin) return 'N/A';
-            const ms = new Date(fin.replace(' ', 'T')) - new Date(inicio.replace(' ', 'T'));
-            if (!Number.isFinite(ms)) return 'N/A';
-            const horas = Math.max(0, ms / 3600000);
+            const realMs = new Date(fin.replace(' ', 'T')) - new Date(inicio.replace(' ', 'T'));
+            if (!Number.isFinite(realMs)) return 'N/A';
+            const horas = Math.max(0, realMs / 3600000);
             return horas < 24 ? `${horas.toFixed(1)} h` : `${(horas / 24).toFixed(1)} d`;
         }
 
@@ -275,158 +321,168 @@
                 ]);
 
                 procesosGlobales = await resProc.json();
-                const inventario = await resInv.json();
+                inventarioGlobal = await resInv.json();
                 const clientes = await resCli.json();
-                const usuarios = await resUsu.json();
+                usuariosGlobales = await resUsu.json();
                 const ingresos = await resIng.json();
                 const movimientos = await resMov.json();
                 const manuales = await resMan.json();
                 const crm = await resCrm.json();
-
-                inventarioGlobal = inventario;
                 clientesCRM = crm.clientes || clientes;
-                usuariosGlobales = usuarios;
 
-                let cPendiente = 0, cAprobacion = 0, cEjecucion = 0, cFinalizado = 0;
-                procesosGlobales.forEach(p => {
-                    const estadoNormal = normalizarEstado(p.estado);
-                    if (estadoNormal.includes('PENDIENTE')) cPendiente++;
-                    else if (estadoNormal.includes('ESPERANDO')) cAprobacion++;
-                    else if (estadoNormal.includes('APROBADO')) cEjecucion++;
-                    else if (estadoNormal.includes('FINALIZADO')) cFinalizado++;
-                });
-                document.getElementById('kpiPendiente').innerText = cPendiente;
-                document.getElementById('kpiAprobacion').innerText = cAprobacion;
-                document.getElementById('kpiEjecucion').innerText = cEjecucion;
-                document.getElementById('kpiFinalizado').innerText = cFinalizado;
+                $('selectCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)} - ${limpiarTexto(c.nit)}</option>`).join('');
+                $('interaccionCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)}</option>`).join('');
+                $('selectTecnico').innerHTML = usuariosGlobales.filter(u => rolEsTecnico(u.rol) && (u.activo || 'SI') !== 'NO').map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(u.rol)}</option>`).join('');
 
-                document.getElementById('selectCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)} - ${limpiarTexto(c.nit)}</option>`).join('');
-                document.getElementById('interaccionCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)}</option>`).join('');
-                document.getElementById('selectTecnico').innerHTML = usuarios
-                    .filter(u => rolEsTecnico(u.rol) && (u.activo || 'SI') !== 'NO')
-                    .map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(u.rol)}</option>`).join('');
-
-                document.getElementById('tablaUsuarios').innerHTML = usuarios.map(u => {
-                    const activo = (u.activo || 'SI') !== 'NO';
-                    const botonEstado = activo
-                        ? `<button class="btn btn-sm btn-outline-warning" onclick="cambiarEstadoUsuario(${u.id}, 'NO')">Bajar</button>`
-                        : `<button class="btn btn-sm btn-outline-success" onclick="cambiarEstadoUsuario(${u.id}, 'SI')">Subir</button>`;
-                    return `<tr><td>${u.id}</td><td class="text-start fw-bold">${limpiarTexto(u.nombre)}</td><td>${limpiarTexto(u.username || '')}</td><td><span class="badge bg-dark">${limpiarTexto(u.rol)}</span></td><td><span class="badge ${activo ? 'bg-success' : 'bg-secondary'}">${activo ? 'Activo' : 'Inactivo'}</span></td><td><div class="d-flex gap-2 justify-content-center"><button class="btn btn-sm btn-outline-primary" onclick="editarUsuarioPorId(${u.id})">Editar</button>${botonEstado}</div></td></tr>`;
-                }).join('') || `<tr><td colspan="6" class="text-center text-muted py-4">No hay usuarios registrados.</td></tr>`;
-
-                document.getElementById('selectAbastecerItem').innerHTML = inventario.map(i => `<option value="${i.id}">${limpiarTexto(i.nombre_insumo)}</option>`).join('');
-                document.getElementById('selSalidaRepuesto').innerHTML = inventario.map(i => `<option value="${limpiarTexto(i.nombre_insumo)}">${limpiarTexto(i.nombre_insumo)} (${i.cantidad_disponible})</option>`).join('');
-                document.getElementById('tablaIngresos').innerHTML = ingresos.map(i => `<tr><td>${limpiarTexto(i.fecha || '')}</td><td class="text-start">${limpiarTexto(i.nombre_repuesto)}</td><td>${i.cantidad}</td></tr>`).join('');
-                document.getElementById('tablaMovimientosCompleta').innerHTML = [
+                $('selectAbastecerItem').innerHTML = inventarioGlobal.map(i => `<option value="${i.id}">${limpiarTexto(i.nombre_insumo)}</option>`).join('');
+                $('selSalidaRepuesto').innerHTML = inventarioGlobal.map(i => `<option value="${limpiarTexto(i.nombre_insumo)}">${limpiarTexto(i.nombre_insumo)} (${i.cantidad_disponible})</option>`).join('');
+                $('tablaIngresos').innerHTML = ingresos.map(i => `<tr><td>${limpiarTexto(i.fecha || '')}</td><td>${limpiarTexto(i.nombre_repuesto)}</td><td>${i.cantidad}</td></tr>`).join('') || `<tr><td colspan="3" class="empty-state">Sin entradas registradas.</td></tr>`;
+                $('tablaMovimientosCompleta').innerHTML = [
                     ...movimientos.map(m => ({ tipo: m.ods || 'ODS', cliente: m.cliente || '', repuesto: m.repuesto, cantidad: m.cantidad, destino: m.destino || '' })),
                     ...manuales.map(m => ({ tipo: 'Manual', cliente: m.fecha || '', repuesto: m.nombre_repuesto, cantidad: m.cantidad, destino: m.motivo || '' }))
-                ].map(m => `<tr><td>${limpiarTexto(m.tipo)}</td><td>${limpiarTexto(m.cliente)}</td><td class="text-start fw-bold">${limpiarTexto(m.repuesto)}</td><td>${m.cantidad}</td><td>${limpiarTexto(m.destino)}</td></tr>`).join('');
+                ].map(m => `<tr><td>${limpiarTexto(m.tipo)}</td><td>${limpiarTexto(m.cliente)}</td><td>${limpiarTexto(m.repuesto)}</td><td>${m.cantidad}</td><td>${limpiarTexto(m.destino)}</td></tr>`).join('') || `<tr><td colspan="5" class="empty-state">Sin movimientos.</td></tr>`;
 
                 renderTablaProcesos();
                 renderInventario();
                 renderClientesCRM(crm);
-            } catch (e) {
-                console.error(e);
+                renderUsuarios();
+            } catch (error) {
+                console.error(error);
             }
         }
 
         function renderTablaProcesos() {
-            const tablaProc = document.getElementById('tablaProcesos');
-            const perfilActual = (sesionActual?.rol || document.getElementById('vistaAdminRol').value || '').toUpperCase();
-            const filtro = normalizarEstado(estadoFiltroActivo);
-            const procesosAMostrar = filtro
-                ? procesosGlobales.filter(p => normalizarEstado(p.estado).includes(filtro.split(' ')[0]))
-                : procesosGlobales;
+            const texto = normalizarTexto($('filtroOdsTexto')?.value || '');
+            const servicio = $('filtroOdsServicio')?.value || '';
+            const equipo = $('filtroOdsEquipo')?.value || '';
+            const perfilActual = (sesionActual?.rol || '').toUpperCase();
 
-            tablaProc.innerHTML = procesosAMostrar.map(p => {
-                const estadoNormal = normalizarEstado(p.estado);
-                let badgeColor = 'bg-secondary';
-                let botonAccion = `<span class="text-muted fw-bold small">Tecnico evaluando</span>`;
+            let cPendiente = 0, cAprobacion = 0, cEjecucion = 0, cFinalizado = 0;
+            procesosGlobales.forEach(p => {
+                const estado = normalizarTexto(p.estado);
+                if (estado.includes('PENDIENTE')) cPendiente++;
+                else if (estado.includes('ESPERANDO')) cAprobacion++;
+                else if (estado.includes('APROBADO')) cEjecucion++;
+                else if (estado.includes('FINALIZADO')) cFinalizado++;
+            });
+            $('kpiPendiente').innerText = cPendiente;
+            $('kpiAprobacion').innerText = cAprobacion;
+            $('kpiEjecucion').innerText = cEjecucion;
+            $('kpiFinalizado').innerText = cFinalizado;
 
-                if (estadoNormal.includes('ESPERANDO')) {
-                    badgeColor = 'bg-warning text-dark';
-                    if (['COORDINADOR', 'ADMINISTRADOR', 'ADMINISTRATIVO'].includes(perfilActual)) {
-                        botonAccion = `<button class="btn btn-sm btn-outline-info fw-bold mb-1 w-100" onclick="verDiagnostico(${p.id})">Leer reporte</button><button class="btn btn-sm btn-success fw-bold w-100" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar inicio</button>`;
-                    } else {
-                        botonAccion = `<span class="text-warning small fw-bold">Requiere coordinador</span>`;
-                    }
-                } else if (estadoNormal.includes('APROBADO')) {
-                    badgeColor = 'bg-primary';
-                    botonAccion = `<span class="text-primary small fw-bold">En taller activo</span>`;
-                } else if (estadoNormal.includes('FINALIZADO')) {
-                    badgeColor = 'bg-success';
-                    botonAccion = `<span class="badge bg-success">ODS completada</span>`;
+            const visibles = procesosGlobales.filter(p => {
+                const estado = normalizarTexto(p.estado);
+                const busca = normalizarTexto(`${p.ods} ${p.tipo_tarea} ${p.tipo_equipo} ${p.marca_equipo} ${p.modelo_equipo} ${p.cliente} ${p.tecnico}`);
+                return (!estadoFiltroActivo || estado.includes(estadoFiltroActivo))
+                    && (!texto || busca.includes(texto))
+                    && (!servicio || p.modalidad_servicio === servicio)
+                    && (!equipo || p.tipo_equipo === equipo);
+            });
+
+            $('tablaProcesos').innerHTML = visibles.map(p => {
+                const estado = normalizarTexto(p.estado);
+                let estadoPill = 'pill-muted';
+                let progressClass = 'bg-secondary';
+                let accion = `<span class="pill pill-muted">En evaluacion</span>`;
+
+                if (estado.includes('ESPERANDO')) {
+                    estadoPill = 'pill-amber'; progressClass = 'bg-warning';
+                    accion = `<button class="btn btn-sm btn-outline-primary" onclick="verDiagnostico(${p.id})">Ver reporte</button>`;
+                    if (['ADMINISTRADOR', 'ADMINISTRATIVO', 'COORDINADOR'].includes(perfilActual)) accion += `<button class="btn btn-sm btn-success" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar</button>`;
+                } else if (estado.includes('APROBADO')) {
+                    estadoPill = 'pill-blue'; progressClass = 'bg-primary'; accion = `<span class="pill pill-blue">En ejecucion</span>`;
+                } else if (estado.includes('FINALIZADO')) {
+                    estadoPill = 'pill-green'; progressClass = 'bg-success'; accion = `<span class="pill pill-green">Cerrada</span>`;
                 }
 
-                if (perfilActual === 'ADMINISTRADOR') {
-                    botonAccion += `<button class="btn btn-sm btn-outline-danger fw-bold mt-1 w-100" onclick="eliminarOds(${p.id})">Eliminar ODS</button>`;
-                }
+                if (perfilActual === 'ADMINISTRADOR') accion += `<button class="btn btn-sm btn-outline-danger" onclick="eliminarOds(${p.id})">Eliminar</button>`;
 
-                let htmlTiempos = `<div class="metric-time text-start"><strong>Ingreso:</strong> ${limpiarTexto(p.fecha_creacion || 'N/A')}`;
-                if (p.fecha_diagnostico) htmlTiempos += `<br><span>Diagnostico: +${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span>`;
-                if (p.fecha_aprobacion) htmlTiempos += `<br><span>Aprobacion: +${difHoras(p.fecha_diagnostico, p.fecha_aprobacion)}</span>`;
-                if (p.fecha_finalizacion) htmlTiempos += `<br><strong>Cierre total:</strong> ${difHoras(p.fecha_creacion, p.fecha_finalizacion)}`;
-                htmlTiempos += `</div>`;
+                let tiempos = `<div class="small text-start"><strong>Ingreso:</strong> ${limpiarTexto(p.fecha_creacion || 'N/A')}`;
+                if (p.fecha_diagnostico) tiempos += `<br><span>Diag: ${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span>`;
+                if (p.fecha_aprobacion) tiempos += `<br><span>Aprob: ${difHoras(p.fecha_diagnostico, p.fecha_aprobacion)}</span>`;
+                if (p.fecha_finalizacion) tiempos += `<br><strong>Total:</strong> ${difHoras(p.fecha_creacion, p.fecha_finalizacion)}`;
+                tiempos += `</div>`;
 
-                return `<tr><td><span class="badge bg-dark">#${limpiarTexto(p.ods || 'N/A')}</span></td><td class="text-start"><span class="fw-bold">${limpiarTexto(p.tipo_tarea)}</span><br><small class="text-muted">${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')} - ${limpiarTexto(p.modalidad_servicio || '')} - ${p.horas_ingreso || 0} h</small></td><td><span class="fw-bold">${limpiarTexto(p.tecnico)}</span><br><small class="text-muted">${limpiarTexto(p.cliente)}</small></td><td>${htmlTiempos}</td><td class="align-middle" style="width: 15%;"><div class="progress"><div class="progress-bar ${badgeColor}" style="width:${p.porcentaje_avance || 0}%"></div></div></td><td><span class="badge ${badgeColor}">${limpiarTexto(p.estado)}</span></td><td style="width: 20%;">${botonAccion}</td></tr>`;
-            }).join('') || `<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">No hay operaciones para mostrar.</td></tr>`;
+                return `<tr>
+                    <td><span class="pill pill-dark">#${limpiarTexto(p.ods || 'N/A')}</span></td>
+                    <td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small class="text-muted">${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')} - ${p.horas_ingreso || 0} h</small><br><small>${limpiarTexto(p.tipo_tarea)}</small></td>
+                    <td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong><br><small class="text-muted">${limpiarTexto(p.tecnico)}</small></td>
+                    <td>${tiempos}</td>
+                    <td><div class="progress"><div class="progress-bar ${progressClass}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td>
+                    <td><span class="pill ${estadoPill}">${limpiarTexto(p.estado)}</span></td>
+                    <td><div class="inline-actions">${accion}</div></td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="7" class="empty-state">No hay ODS con estos filtros.</td></tr>`;
         }
 
         function toggleFiltroEstado(estado, elemento) {
             estadoFiltroActivo = estadoFiltroActivo === estado ? null : estado;
-            document.querySelectorAll('.kpi-card').forEach(k => k.classList.toggle('kpi-dimmed', estadoFiltroActivo && k !== elemento));
-            const etiqueta = document.getElementById('etiquetaFiltro');
-            etiqueta.classList.toggle('d-none', !estadoFiltroActivo);
-            etiqueta.innerText = estadoFiltroActivo ? `Filtro activo: ${estadoFiltroActivo} x` : 'Filtro activo x';
+            document.querySelectorAll('.metric').forEach(item => item.classList.toggle('dimmed', estadoFiltroActivo && item !== elemento));
+            $('etiquetaFiltro').classList.toggle('d-none', !estadoFiltroActivo);
+            $('etiquetaFiltro').innerText = estadoFiltroActivo ? `Estado: ${estadoFiltroActivo}` : 'Filtro activo';
             renderTablaProcesos();
+        }
+
+        function renderInventario() {
+            const texto = normalizarTexto($('filtroInventarioTexto')?.value || '');
+            const estadoFiltro = $('filtroInventarioEstado')?.value || '';
+            const items = inventarioGlobal.filter(i => {
+                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
+                const estado = critico ? 'CRITICO' : 'OPTIMO';
+                return (!texto || normalizarTexto(i.nombre_insumo).includes(texto)) && (!estadoFiltro || estado === estadoFiltro);
+            });
+            $('tablaInventario').innerHTML = items.map(i => {
+                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
+                return `<tr><td><strong>${limpiarTexto(i.nombre_insumo)}</strong></td><td>${i.cantidad_disponible}</td><td>${limpiarTexto(i.unidad_medida)}</td><td>${i.stock_minimo_alerta}</td><td><span class="pill ${critico ? 'pill-red' : 'pill-green'}">${critico ? 'CRITICO' : 'OPTIMO'}</span></td></tr>`;
+            }).join('') || `<tr><td colspan="5" class="empty-state">No hay insumos con estos filtros.</td></tr>`;
         }
 
         function barraCRM(label, valor, total) {
             const porcentaje = total ? Math.round((valor / total) * 100) : 0;
-            return `<div class="col-md-6"><div class="window-strip"><div class="d-flex justify-content-between small fw-bold"><span>${limpiarTexto(label)}</span><span>${valor}</span></div><div class="progress mt-2"><div class="progress-bar bg-info" style="width:${porcentaje}%"></div></div></div></div>`;
+            return `<div class="mini-chart"><div class="mini-chart-label"><span>${limpiarTexto(label)}</span><span>${valor}</span></div><div class="progress mt-2"><div class="progress-bar bg-info" style="width:${porcentaje}%"></div></div></div>`;
         }
 
         function renderClientesCRM(crmData = null) {
             const data = crmData || { clientes: clientesCRM };
-            const texto = normalizarTexto(document.getElementById('filtroClienteTexto')?.value || '');
-            const tipo = document.getElementById('filtroClienteTipo')?.value || '';
-            const frecuencia = document.getElementById('filtroClienteSegmento')?.value || '';
+            const texto = normalizarTexto($('filtroClienteTexto')?.value || '');
+            const tipo = $('filtroClienteTipo')?.value || '';
+            const frecuencia = $('filtroClienteSegmento')?.value || '';
             const clientes = (data.clientes || clientesCRM).filter(c => {
-                const coincideTexto = !texto || normalizarTexto(`${c.razon_social} ${c.nit} ${c.correo}`).includes(texto);
-                const coincideTipo = !tipo || c.tipo_cliente === tipo;
-                const coincideFrecuencia = !frecuencia || c.segmento === frecuencia;
-                return coincideTexto && coincideTipo && coincideFrecuencia;
+                const busca = normalizarTexto(`${c.razon_social} ${c.nit} ${c.correo} ${c.telefono}`);
+                return (!texto || busca.includes(texto)) && (!tipo || c.tipo_cliente === tipo) && (!frecuencia || c.segmento === frecuencia);
             });
-
             const totalInteracciones = clientes.reduce((sum, c) => sum + (c.total_interacciones || 0), 0);
-            document.getElementById('crmKpis').innerHTML = [
-                ['Clientes visibles', clientes.length],
-                ['Interacciones', totalInteracciones],
-                ['Frecuentes', clientes.filter(c => c.segmento === 'Frecuente').length],
-                ['Nuevos', clientes.filter(c => c.segmento === 'Nuevo').length],
-            ].map(([label, value]) => `<div class="col-xl-3 col-sm-6"><div class="card p-3 h-100 kpi-card"><div class="text-muted small fw-bold text-uppercase">${label}</div><div class="fs-2 fw-bold text-dark">${value}</div></div></div>`).join('');
+            $('crmKpis').innerHTML = [
+                ['Clientes visibles', clientes.length, 'pending'],
+                ['Interacciones', totalInteracciones, 'running'],
+                ['Frecuentes', clientes.filter(c => c.segmento === 'Frecuente').length, 'done'],
+                ['Nuevos', clientes.filter(c => c.segmento === 'Nuevo').length, 'waiting'],
+            ].map(([label, value, cls]) => `<div class="metric ${cls}"><span class="metric-label">${label}</span><span class="metric-value">${value}</span><span class="metric-line"></span></div>`).join('');
 
-            const tiposInteraccion = {};
-            clientes.forEach(c => Object.entries(c.tipos_interaccion || {}).forEach(([k, v]) => tiposInteraccion[k] = (tiposInteraccion[k] || 0) + v));
-            document.getElementById('crmGraficos').innerHTML = Object.entries(tiposInteraccion).map(([k, v]) => barraCRM(k, v, totalInteracciones)).join('') || `<div class="col-12 text-muted small">No hay interacciones con estos filtros.</div>`;
-            document.getElementById('tablaClientes').innerHTML = clientes.map(c => `<tr><td>${c.id}</td><td class="text-start fw-bold">${limpiarTexto(c.razon_social)}<br><small class="text-muted">${limpiarTexto(c.nit)}</small></td><td>${limpiarTexto(c.tipo_cliente)}</td><td>${limpiarTexto(c.correo)}<br><small>${limpiarTexto(c.telefono)}</small></td><td>${c.total_interacciones || 0}</td><td><span class="badge bg-dark">${limpiarTexto(c.segmento)}</span></td></tr>`).join('') || `<tr><td colspan="6" class="text-center text-muted py-4">No hay clientes con estos filtros.</td></tr>`;
+            const tipos = {};
+            clientes.forEach(c => Object.entries(c.tipos_interaccion || {}).forEach(([k, v]) => tipos[k] = (tipos[k] || 0) + v));
+            $('crmGraficos').innerHTML = Object.entries(tipos).map(([k, v]) => barraCRM(k, v, totalInteracciones)).join('') || `<div class="empty-state">No hay interacciones con estos filtros.</div>`;
+            $('tablaClientes').innerHTML = clientes.map(c => `<tr><td>${c.id}</td><td class="text-start"><strong>${limpiarTexto(c.razon_social)}</strong><br><small>${limpiarTexto(c.nit)}</small></td><td>${limpiarTexto(c.tipo_cliente)}</td><td class="text-start">${limpiarTexto(c.correo)}<br><small>${limpiarTexto(c.telefono)}</small></td><td>${c.total_interacciones || 0}</td><td><span class="pill pill-dark">${limpiarTexto(c.segmento)}</span></td></tr>`).join('') || `<tr><td colspan="6" class="empty-state">No hay clientes con estos filtros.</td></tr>`;
         }
 
-        function renderInventario() {
-            const texto = normalizarTexto(document.getElementById('filtroInventarioTexto')?.value || '');
-            const estado = document.getElementById('filtroInventarioEstado')?.value || '';
-            const items = inventarioGlobal.filter(i => {
-                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
-                const estadoItem = critico ? 'CRITICO' : 'OPTIMO';
-                return (!texto || normalizarTexto(i.nombre_insumo).includes(texto)) && (!estado || estadoItem === estado);
+        function renderUsuarios() {
+            const texto = normalizarTexto($('filtroUsuarioTexto')?.value || '');
+            const estado = $('filtroUsuarioEstado')?.value || '';
+            const usuarios = usuariosGlobales.filter(u => {
+                const activo = u.activo || 'SI';
+                const busca = normalizarTexto(`${u.id} ${u.nombre} ${u.username} ${u.rol}`);
+                return (!texto || busca.includes(texto)) && (!estado || activo === estado);
             });
-            document.getElementById('tablaInventario').innerHTML = items.map(i => {
-                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
-                return `<tr><td class="text-start fw-bold">${limpiarTexto(i.nombre_insumo)}</td><td>${i.cantidad_disponible}</td><td>${limpiarTexto(i.unidad_medida)}</td><td>${i.stock_minimo_alerta}</td><td><span class="badge ${critico ? 'bg-danger' : 'bg-success'}">${critico ? 'CRITICO' : 'OPTIMO'}</span></td></tr>`;
-            }).join('') || `<tr><td colspan="5" class="text-center text-muted py-4">No hay insumos con estos filtros.</td></tr>`;
+            $('tablaUsuarios').innerHTML = usuarios.map(u => {
+                const activo = (u.activo || 'SI') !== 'NO';
+                return `<tr><td>${u.id}</td><td class="text-start"><strong>${limpiarTexto(u.nombre)}</strong></td><td>${limpiarTexto(u.username || '')}</td><td><span class="pill pill-blue">${limpiarTexto(u.rol)}</span></td><td><span class="pill ${activo ? 'pill-green' : 'pill-muted'}">${activo ? 'Activo' : 'Inactivo'}</span></td><td><div class="inline-actions"><button class="btn btn-sm btn-outline-primary" onclick="editarUsuarioPorId(${u.id})">Editar</button><button class="btn btn-sm ${activo ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="cambiarEstadoUsuario(${u.id}, '${activo ? 'NO' : 'SI'}')">${activo ? 'Bajar' : 'Subir'}</button></div></td></tr>`;
+            }).join('') || `<tr><td colspan="6" class="empty-state">No hay usuarios con estos filtros.</td></tr>`;
         }
 
-        async function cambiarEstadoOds(id, accion) { await fetch(`/procesos/${id}/cambiar-estado?accion=${accion}`, { method: 'POST' }); cargarTablas(); }
+        async function cambiarEstadoOds(id, accion) {
+            await fetch(`/procesos/${id}/cambiar-estado?accion=${accion}`, { method: 'POST' });
+            cargarTablas();
+        }
 
         async function eliminarOds(id) {
             const rol = (sesionActual?.rol || '').toUpperCase();
@@ -436,58 +492,113 @@
             if (!res.ok) { alert('No fue posible eliminar la ODS.'); return; }
             cargarTablas();
         }
-        
+
         async function verDiagnostico(id) {
-            try {
-                const res = await fetch(`/procesos/${id}/diagnostico`); 
-                const diag = await res.json(); 
-                let contenido = '';
-                
-                if(diag.error) { 
-                    contenido = `<div class="p-4 text-center text-danger fw-bold">⚠️ El reporte no está disponible.</div>`; 
-                } else {
-                    contenido = `<div class="p-4 bg-white"><div class="row g-3 mb-3 text-center"><div class="col-6"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Tipo de Equipo</small><strong class="text-dark">${diag.tipo_equipo}</strong></div></div><div class="col-6"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Batería</small><strong class="text-primary">${diag.estado_bateria}</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Compresor</small><strong class="text-primary">${diag.estado_compresor}</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Tamiz</small><strong class="text-primary">${diag.estado_tamiz}</strong></div></div><div class="col-4"><div class="p-2 bg-light rounded border"><small class="text-muted d-block">Válvulas</small><strong class="text-primary">${diag.estado_valvulas}</strong></div></div></div><div class="mt-3"><small class="text-muted fw-bold ms-1">📝 Observaciones de Campo:</small><div class="p-3 bg-light border rounded mt-1 text-dark" style="font-size:0.95rem;">${diag.observaciones || 'No se registraron observaciones adicionales.'}</div></div></div>`;
-                }
-                
-                document.getElementById('cuerpoVerDiagnostico').innerHTML = contenido; 
-                
-                // Función que abre de forma segura sin congelar
-                const modalEl = document.getElementById('modalVerDiagnostico');
-                const modalInst = bootstrap.Modal.getOrCreateInstance(modalEl);
-                modalInst.show();
-                
-            } catch (e) { console.error("Error:", e); }
+            const res = await fetch(`/procesos/${id}/diagnostico`);
+            const diag = await res.json();
+            $('cuerpoVerDiagnostico').innerHTML = diag.error
+                ? `<div class="empty-state">El reporte no esta disponible.</div>`
+                : `<div class="splitter"><div class="mini-chart"><strong>Equipo</strong><br>${limpiarTexto(diag.tipo_equipo)}</div><div class="mini-chart"><strong>Bateria</strong><br>${limpiarTexto(diag.estado_bateria)}</div><div class="mini-chart"><strong>Compresor</strong><br>${limpiarTexto(diag.estado_compresor)}</div><div class="mini-chart"><strong>Tamiz</strong><br>${limpiarTexto(diag.estado_tamiz)}</div></div><hr><strong>Observaciones</strong><p class="mb-0 mt-2">${limpiarTexto(diag.observaciones || 'Sin observaciones.')}</p>`;
+            bootstrap.Modal.getOrCreateInstance($('modalVerDiagnostico')).show();
+        }
+
+        function limpiarUsuarioForm() {
+            $('usuarioEditandoId').value = '';
+            $('formUsuario').reset();
+            $('passwordUsuario').required = true;
+            $('btnUsuarioSubmit').textContent = 'Guardar usuario';
         }
 
         function editarUsuarioPorId(id) {
             const usuario = usuariosGlobales.find(u => u.id === id);
             if (!usuario) return;
-            editarUsuario(id, usuario.nombre, usuario.username || '', usuario.rol, usuario.activo || 'SI');
+            $('usuarioEditandoId').value = usuario.id;
+            $('nombreUsuario').value = usuario.nombre || '';
+            $('loginUsuario').value = usuario.username || '';
+            $('passwordUsuario').value = '';
+            $('passwordUsuario').required = false;
+            $('rolUsuario').value = usuario.rol || 'OPERATIVO';
+            $('btnUsuarioSubmit').textContent = 'Actualizar usuario';
         }
 
-        function editarUsuario(id, nombre, username, rol, activo) {
-            const nuevoNombre = prompt('Nombre del usuario', nombre) || nombre;
-            const nuevoUsuario = prompt('Usuario de acceso', username) || username;
-            const nuevaClave = prompt('Nueva contrasena (dejar vacio para conservar)', '') || null;
-            const nuevoRol = prompt('Rol: ADMINISTRADOR, ADMINISTRATIVO, OPERATIVO, COORDINADOR, RECEPCIONISTA', rol) || rol;
-            const payload = { nombre: nuevoNombre, username: nuevoUsuario, rol: nuevoRol, activo };
-            if (nuevaClave) payload.password = nuevaClave;
-            fetch(`/usuarios/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }).then(cargarTablas);
+        async function cambiarEstadoUsuario(id, activo) {
+            await fetch(`/usuarios/${id}/estado?activo=${activo}`, { method: 'POST' });
+            cargarTablas();
         }
 
-        function cambiarEstadoUsuario(id, activo) {
-            fetch(`/usuarios/${id}/estado?activo=${activo}`, { method: 'POST' }).then(cargarTablas);
-        }
+        $('formOrden').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch('/procesos/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                ods: $('odsTarea').value,
+                tipo_tarea: $('descTarea').value,
+                tipo_equipo: $('tipoEquipoOds').value,
+                marca_equipo: $('marcaEquipoOds').value,
+                modelo_equipo: $('modeloEquipoOds').value,
+                horas_ingreso: parseFloat($('horasEquipoOds').value || 0),
+                modalidad_servicio: $('modalidadServicioOds').value,
+                id_cliente: parseInt($('selectCliente').value),
+                id_trabajador_asignado: parseInt($('selectTecnico').value)
+            }) });
+            e.target.reset();
+            cargarTablas();
+        });
 
-        document.getElementById('formOrden')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/procesos/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ods: document.getElementById('odsTarea').value, tipo_tarea: document.getElementById('descTarea').value, tipo_equipo: document.getElementById('tipoEquipoOds').value, marca_equipo: document.getElementById('marcaEquipoOds').value, modelo_equipo: document.getElementById('modeloEquipoOds').value, horas_ingreso: parseFloat(document.getElementById('horasEquipoOds').value || 0), modalidad_servicio: document.getElementById('modalidadServicioOds').value, id_cliente: parseInt(document.getElementById('selectCliente').value), id_trabajador_asignado: parseInt(document.getElementById('selectTecnico').value) }) }); document.getElementById('formOrden').reset(); cargarTablas(); });
-        document.getElementById('formCliente')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/clientes/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ razon_social: document.getElementById('nombreCliente').value, tipo_cliente: document.getElementById('tipoCliente').value, nit: document.getElementById('nitCliente').value, correo: document.getElementById('correoCliente').value, telefono: document.getElementById('telefonoCliente').value }) }); document.getElementById('formCliente').reset(); cargarTablas(); });
-        document.getElementById('formUsuario')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/usuarios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre: document.getElementById('nombreUsuario').value, username: document.getElementById('loginUsuario').value, password: document.getElementById('passwordUsuario').value, rol: document.getElementById('rolUsuario').value, activo: 'SI' }) }); document.getElementById('formUsuario').reset(); cargarTablas(); });
-        document.getElementById('formInteraccionCliente')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/clientes/${document.getElementById('interaccionCliente').value}/interacciones`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ tipo: document.getElementById('interaccionTipo').value, detalle: document.getElementById('interaccionDetalle').value }) }); document.getElementById('formInteraccionCliente').reset(); cargarTablas(); });
-        document.getElementById('formItem')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch('/inventario/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre_insumo: document.getElementById('nombreItem').value, cantidad_disponible: parseFloat(document.getElementById('cantItem').value), unidad_medida: document.getElementById('medidaItem').value, stock_minimo_alerta: parseFloat(document.getElementById('alertaItem').value) }) }); document.getElementById('formItem').reset(); cargarTablas(); });
-        document.getElementById('formAbastecerItem')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/${document.getElementById('selectAbastecerItem').value}/abastecer?cantidad=${document.getElementById('cantAbastecer').value}`, { method: 'POST' }); document.getElementById('formAbastecerItem').reset(); cargarTablas(); });
-        document.getElementById('formSalidaManual')?.addEventListener('submit', async (e) => { e.preventDefault(); await fetch(`/inventario/salida-manual?nombre=${document.getElementById('selSalidaRepuesto').value}&cantidad=${document.getElementById('cantSalida').value}&motivo=${document.getElementById('motivoSalida').value}`, { method: 'POST' }); document.getElementById('formSalidaManual').reset(); cargarTablas(); });
+        $('formCliente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch('/clientes/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                razon_social: $('nombreCliente').value,
+                tipo_cliente: $('tipoCliente').value,
+                nit: $('nitCliente').value,
+                correo: $('correoCliente').value,
+                telefono: $('telefonoCliente').value
+            }) });
+            e.target.reset();
+            cargarTablas();
+        });
 
-        window.onload = iniciarAdmin;
+        $('formInteraccionCliente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch(`/clientes/${$('interaccionCliente').value}/interacciones`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ tipo: $('interaccionTipo').value, detalle: $('interaccionDetalle').value }) });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formUsuario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = $('usuarioEditandoId').value;
+            const payload = { nombre: $('nombreUsuario').value, username: $('loginUsuario').value, rol: $('rolUsuario').value, activo: 'SI' };
+            if ($('passwordUsuario').value) payload.password = $('passwordUsuario').value;
+            const url = id ? `/usuarios/${id}` : '/usuarios';
+            const method = id ? 'PUT' : 'POST';
+            await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(id ? payload : { ...payload, password: $('passwordUsuario').value }) });
+            limpiarUsuarioForm();
+            cargarTablas();
+        });
+
+        $('formItem').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch('/inventario/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre_insumo: $('nombreItem').value, cantidad_disponible: parseFloat($('cantItem').value), unidad_medida: $('medidaItem').value, stock_minimo_alerta: parseFloat($('alertaItem').value) }) });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formAbastecerItem').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch(`/inventario/${$('selectAbastecerItem').value}/abastecer?cantidad=${$('cantAbastecer').value}`, { method: 'POST' });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formSalidaManual').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch(`/inventario/salida-manual?nombre=${encodeURIComponent($('selSalidaRepuesto').value)}&cantidad=${$('cantSalida').value}&motivo=${encodeURIComponent($('motivoSalida').value)}`, { method: 'POST' });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        window.addEventListener('load', () => {
+            if (protegerAdmin()) cargarTablas();
+        });
     </script>
 </body>
 </html>

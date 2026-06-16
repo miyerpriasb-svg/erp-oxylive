@@ -1,194 +1,605 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Oxylive ERP | Centro de Operaciones</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body data-page="admin">
-    <header class="topbar">
-      <div class="brand-inline">
-        <div class="brand-mark small">O2</div>
-        <div>
-          <strong>Centro de Operaciones</strong>
-          <span>Administración Bogotá</span>
-        </div>
-      </div>
-      <div class="user-chip">
-        <span id="sessionName"></span>
-        <button id="logoutBtn" class="ghost-button" type="button">Salir</button>
-      </div>
-    </header>
-
-    <main class="workspace">
-      <nav class="module-tabs" aria-label="Módulos administrativos">
-        <button class="tab-button is-active" type="button" data-tab="dashboard">Resumen</button>
-        <button class="tab-button" type="button" data-tab="orders">Gestión ODS</button>
-        <button class="tab-button" type="button" data-tab="inventory" data-roles="Administrador,Coordinador">Inventario</button>
-        <button class="tab-button" type="button" data-tab="directory">Clientes</button>
-      </nav>
-
-      <section id="dashboard" class="tab-panel is-active">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Vista integral</p>
-            <h1>Operación en curso</h1>
-          </div>
-          <button id="resetDemoBtn" class="secondary-action" type="button">Restaurar datos demo</button>
-        </div>
-        <div id="dashboardCards" class="summary-grid"></div>
-        <div class="two-column">
-          <section class="surface">
-            <h2>Flujo de estados</h2>
-            <div class="flow-line">
-              <span>Pendiente diagnóstico</span>
-              <span>Esperando aprobación</span>
-              <span>Aprobado / ejecución</span>
-              <span>Finalizado</span>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Operaciones - Oxylive ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <main class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">O2</div>
+                <div>
+                    <h1 class="brand-title">Centro de Operaciones ERP</h1>
+                    <p class="brand-subtitle">Administracion, ODS, clientes, inventario y personal</p>
+                </div>
             </div>
-          </section>
-          <section class="surface">
-            <h2>Alertas de stock</h2>
-            <div id="stockAlerts" class="compact-list"></div>
-          </section>
-        </div>
-      </section>
+            <div class="topbar-actions">
+                <span id="sessionAdminLabel" class="session-pill"></span>
+                <input type="hidden" id="vistaAdminRol" value="ADMINISTRADOR">
+                <button class="btn btn-light btn-sm" type="button" onclick="cargarTablas()">Actualizar</button>
+                <button class="btn btn-outline-light btn-sm" type="button" onclick="cerrarSesion()">Salir</button>
+            </div>
+        </header>
 
-      <section id="orders" class="tab-panel">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Módulo 2</p>
-            <h1>Gestión de ODS</h1>
-          </div>
-        </div>
-        <div class="split-layout">
-          <section class="surface">
-            <h2>Nueva orden de servicio</h2>
-            <form id="odsForm" class="stack">
-              <div class="form-grid">
-                <label>
-                  Cliente
-                  <select id="odsClient" required></select>
-                </label>
-                <label>
-                  Tipo de equipo
-                  <select id="odsType" required>
-                    <option value="concentrador-estacionario">Concentrador estacionario</option>
-                    <option value="concentrador-portatil">Concentrador portátil</option>
-                    <option value="lote-tamices">Lote de tamices</option>
-                  </select>
-                </label>
-                <label>
-                  Técnico asignado
-                  <select id="odsTech" required></select>
-                </label>
-                <label>
-                  Vía de atención
-                  <select id="odsRoute" required>
-                    <option value="campo">Campo con aprobación</option>
-                    <option value="taller">Taller fast-track</option>
-                  </select>
-                </label>
-              </div>
+        <section class="workspace">
+            <ul class="nav module-tabs" id="modulosERP" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#operaciones" type="button">Operaciones</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventario" type="button">Control de inventario</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#clientes" type="button">Directorio de clientes</button></li>
+                <li class="nav-item" id="tabEquipoNav"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#equipo" type="button">Gestion de equipo</button></li>
+            </ul>
 
-              <div id="equipmentFields"></div>
-              <label>
-                Observación de recepción
-                <textarea id="odsNotes" rows="3" placeholder="Condiciones de ingreso, novedades o solicitud del cliente"></textarea>
-              </label>
-              <button class="primary-action" type="submit">Crear ODS</button>
-            </form>
-          </section>
+            <div class="tab-content">
+                <section class="tab-pane fade show active" id="operaciones" role="tabpanel">
+                    <div class="metrics-grid">
+                        <button class="metric pending text-start" type="button" data-filter-state="PENDIENTE" onclick="toggleFiltroEstado('PENDIENTE', this)"><span class="metric-label">Pendiente diagnostico</span><span class="metric-value" id="kpiPendiente">0</span><span class="metric-line"></span></button>
+                        <button class="metric waiting text-start" type="button" data-filter-state="ESPERANDO" onclick="toggleFiltroEstado('ESPERANDO', this)"><span class="metric-label">Esperando aprobacion</span><span class="metric-value" id="kpiAprobacion">0</span><span class="metric-line"></span></button>
+                        <button class="metric running text-start" type="button" data-filter-state="APROBADO" onclick="toggleFiltroEstado('APROBADO', this)"><span class="metric-label">En ejecucion</span><span class="metric-value" id="kpiEjecucion">0</span><span class="metric-line"></span></button>
+                        <button class="metric done text-start" type="button" data-filter-state="FINALIZADO" onclick="toggleFiltroEstado('FINALIZADO', this)"><span class="metric-label">Finalizadas</span><span class="metric-value" id="kpiFinalizado">0</span><span class="metric-line"></span></button>
+                    </div>
 
-          <section class="surface">
-            <h2>Órdenes activas</h2>
-            <div id="adminOrders" class="order-list"></div>
-          </section>
-        </div>
-      </section>
+                    <div class="workspace-grid">
+                        <div>
+                            <div class="window">
+                                <div class="window-head">
+                                    <div>
+                                        <h2 class="window-title">Nueva ODS</h2>
+                                        <p class="window-subtitle">Asignacion completa por equipo, servicio y tecnico.</p>
+                                    </div>
+                                </div>
+                                <form id="formOrden" class="window-body">
+                                    <div class="splitter">
+                                        <div><label class="form-label" for="odsTarea">Numero ODS</label><input class="form-control" id="odsTarea" required></div>
+                                        <div><label class="form-label" for="modalidadServicioOds">Servicio</label><select class="form-select" id="modalidadServicioOds"><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select></div>
+                                    </div>
+                                    <div class="mt-3"><label class="form-label" for="selectCliente">Cliente</label><select class="form-select" id="selectCliente" required></select></div>
+                                    <div class="mt-3"><label class="form-label" for="selectTecnico">Tecnico asignado</label><select class="form-select" id="selectTecnico" required></select></div>
+                                    <div class="mt-3"><label class="form-label" for="tipoEquipoOds">Tipo de equipo</label><select class="form-select" id="tipoEquipoOds" required><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select></div>
+                                    <div class="splitter mt-3">
+                                        <div><label class="form-label" for="marcaEquipoOds">Marca</label><input class="form-control" id="marcaEquipoOds"></div>
+                                        <div><label class="form-label" for="modeloEquipoOds">Modelo</label><input class="form-control" id="modeloEquipoOds"></div>
+                                    </div>
+                                    <div class="mt-3"><label class="form-label" for="horasEquipoOds">Horas de ingreso</label><input class="form-control" id="horasEquipoOds" type="number" min="0" step="0.1" value="0"></div>
+                                    <div class="mt-3"><label class="form-label" for="descTarea">Requerimiento inicial</label><textarea class="form-control" id="descTarea" rows="3" required></textarea></div>
+                                    <button class="btn btn-dark w-100 mt-4" type="submit">Generar y asignar</button>
+                                </form>
+                            </div>
+                        </div>
 
-      <section id="inventory" class="tab-panel" data-roles="Administrador,Coordinador">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Módulo 3</p>
-            <h1>Inventario y Kardex</h1>
-          </div>
-        </div>
-        <div class="split-layout">
-          <section class="surface">
-            <h2>Catálogo y abastecimiento</h2>
-            <form id="partForm" class="stack">
-              <div class="form-grid">
-                <label>Repuesto<input id="partName" required></label>
-                <label>Unidad<input id="partUnit" required placeholder="unidad, filtro, kit"></label>
-                <label>Stock mínimo<input id="partMin" type="number" min="0" required></label>
-                <label>Entrada inicial<input id="partQty" type="number" min="0" required></label>
-              </div>
-              <button class="primary-action" type="submit">Agregar repuesto</button>
-            </form>
-            <form id="manualMovementForm" class="stack subform">
-              <h3>Movimiento manual</h3>
-              <div class="form-grid">
-                <label>Repuesto<select id="movementPart"></select></label>
-                <label>Tipo<select id="movementType"><option value="entrada">Entrada</option><option value="salida">Salida</option></select></label>
-                <label>Cantidad<input id="movementQty" type="number" min="1" required></label>
-                <label>Motivo<input id="movementReason" required placeholder="Compra, merma, garantía"></label>
-              </div>
-              <button class="secondary-action" type="submit">Registrar movimiento</button>
-            </form>
-          </section>
-          <section class="surface">
-            <h2>Stock actual</h2>
-            <div id="inventoryTable" class="data-table"></div>
-            <h2>Kardex</h2>
-            <div id="kardexList" class="compact-list"></div>
-          </section>
-        </div>
-      </section>
+                        <div class="window">
+                            <div class="window-head">
+                                <div>
+                                    <h2 class="window-title">Bitacora de procesos</h2>
+                                    <p class="window-subtitle">Solo el administrador puede eliminar ordenes.</p>
+                                </div>
+                                <span id="etiquetaFiltro" class="pill pill-blue d-none" role="button" onclick="toggleFiltroEstado(null, null)">Filtro activo</span>
+                            </div>
+                            <div class="window-body">
+                                <div class="toolbar">
+                                    <input class="form-control wide" id="filtroOdsTexto" placeholder="Buscar ODS, cliente, tecnico o equipo" oninput="renderTablaProcesos()">
+                                    <select class="form-select" id="filtroOdsServicio" onchange="renderTablaProcesos()"><option value="">Todos los servicios</option><option>Preventivo</option><option>Correctivo</option><option>Recepcion taller</option><option>Campo</option><option>Recarga</option></select>
+                                    <select class="form-select" id="filtroOdsEquipo" onchange="renderTablaProcesos()"><option value="">Todos los equipos</option><option>Concentrador estacionario</option><option>Concentrador portatil</option><option>Lote de tamices</option><option>Recarga</option><option>Compresor</option><option>Otro</option></select>
+                                </div>
+                            </div>
+                            <div class="table-wrap">
+                                <table class="table align-middle text-center">
+                                    <thead><tr><th>ODS</th><th>Servicio y equipo</th><th>Cliente / Tecnico</th><th>Tiempos</th><th>Avance</th><th>Estado</th><th>Acciones</th></tr></thead>
+                                    <tbody id="tablaProcesos"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-      <section id="directory" class="tab-panel">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Módulo 4</p>
-            <h1>Directorio</h1>
-          </div>
-        </div>
-        <div class="split-layout">
-          <section class="surface" data-roles="Administrador,Coordinador">
-            <h2>Clientes</h2>
-            <form id="clientForm" class="stack">
-              <div class="form-grid">
-                <label>Razón social<input id="clientName" required></label>
-                <label>NIT<input id="clientNit" required></label>
-              </div>
-              <button class="primary-action" type="submit">Crear cliente</button>
-            </form>
-            <div id="clientList" class="compact-list"></div>
-          </section>
-          <section class="surface">
-            <h2>Equipo interno</h2>
-            <form id="userForm" class="stack">
-              <div class="form-grid">
-                <label>Nombre<input id="userName" required></label>
-                <label>Usuario<input id="userLogin" required></label>
-                <label>Rol
-                  <select id="userRole">
-                    <option>Administrador</option>
-                    <option>Coordinador</option>
-                    <option>Recepcionista</option>
-                    <option>Tecnico Campo</option>
-                    <option>Tecnico Taller</option>
-                  </select>
-                </label>
-              </div>
-              <button class="primary-action" type="submit">Crear usuario</button>
-            </form>
-            <div id="userList" class="compact-list"></div>
-          </section>
-        </div>
-      </section>
+                <section class="tab-pane fade" id="inventario" role="tabpanel">
+                    <div class="workspace-grid wide-left mt-3">
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Control de inventario</h2><p class="window-subtitle">Catalogo, entradas, salidas y Kardex.</p></div></div>
+                                <div class="window-body">
+                                    <form id="formItem">
+                                        <label class="form-label" for="nombreItem">Nuevo insumo</label>
+                                        <input class="form-control mb-2" id="nombreItem" placeholder="Nombre del repuesto" required>
+                                        <div class="splitter">
+                                            <input class="form-control" id="cantItem" type="number" min="0" step="any" placeholder="Cantidad inicial" required>
+                                            <input class="form-control" id="alertaItem" type="number" min="0" step="any" placeholder="Stock minimo" required>
+                                        </div>
+                                        <input class="form-control mt-2" id="medidaItem" placeholder="Unidad de medida" required>
+                                        <button class="btn btn-dark w-100 mt-3" type="submit">Agregar al catalogo</button>
+                                    </form>
+                                    <hr>
+                                    <form id="formAbastecerItem">
+                                        <label class="form-label" for="selectAbastecerItem">Entrada de inventario</label>
+                                        <select class="form-select mb-2" id="selectAbastecerItem" required></select>
+                                        <input class="form-control mb-2" id="cantAbastecer" type="number" min="0.1" step="any" placeholder="Cantidad recibida" required>
+                                        <button class="btn btn-success w-100" type="submit">Registrar entrada</button>
+                                    </form>
+                                    <hr>
+                                    <form id="formSalidaManual">
+                                        <label class="form-label" for="selSalidaRepuesto">Salida manual</label>
+                                        <select class="form-select mb-2" id="selSalidaRepuesto" required></select>
+                                        <input class="form-control mb-2" id="cantSalida" type="number" min="0.1" step="any" placeholder="Cantidad" required>
+                                        <input class="form-control mb-2" id="motivoSalida" placeholder="Motivo" required>
+                                        <button class="btn btn-danger w-100" type="submit">Confirmar salida</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Visor de stock</h2><p class="window-subtitle">Busqueda inmediata y alerta critica.</p></div></div>
+                                <div class="window-body">
+                                    <div class="toolbar">
+                                        <input class="form-control wide" id="filtroInventarioTexto" placeholder="Buscar insumo" oninput="renderInventario()">
+                                        <select class="form-select" id="filtroInventarioEstado" onchange="renderInventario()"><option value="">Todos los estados</option><option value="CRITICO">Critico</option><option value="OPTIMO">Optimo</option></select>
+                                    </div>
+                                </div>
+                                <div class="table-wrap" style="max-height: 360px;">
+                                    <table class="table align-middle"><thead><tr><th>Insumo</th><th>Disponible</th><th>Unidad</th><th>Minimo</th><th>Estado</th></tr></thead><tbody id="tablaInventario"></tbody></table>
+                                </div>
+                            </div>
+                            <div class="splitter mt-3">
+                                <div class="window">
+                                    <div class="window-head"><h2 class="window-title">Entradas</h2></div>
+                                    <div class="table-wrap" style="max-height: 270px;"><table class="table table-sm"><thead><tr><th>Fecha</th><th>Repuesto</th><th>Cant.</th></tr></thead><tbody id="tablaIngresos"></tbody></table></div>
+                                </div>
+                                <div class="window">
+                                    <div class="window-head"><h2 class="window-title">Kardex</h2></div>
+                                    <div class="table-wrap" style="max-height: 270px;"><table class="table table-sm"><thead><tr><th>Origen</th><th>Cliente/Fecha</th><th>Repuesto</th><th>Cant.</th><th>Destino</th></tr></thead><tbody id="tablaMovimientosCompleta"></tbody></table></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tab-pane fade" id="clientes" role="tabpanel">
+                    <div class="metrics-grid" id="crmKpis"></div>
+                    <div class="workspace-grid">
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Ventana de cliente</h2><p class="window-subtitle">Datos de contacto y clasificacion.</p></div></div>
+                                <form id="formCliente" class="window-body">
+                                    <label class="form-label" for="nombreCliente">Razon social</label>
+                                    <input class="form-control mb-2" id="nombreCliente" required>
+                                    <div class="splitter">
+                                        <select class="form-select" id="tipoCliente" required><option value="Juridico">Juridico</option><option value="Natural">Natural</option></select>
+                                        <input class="form-control" id="nitCliente" placeholder="NIT o identificacion" required>
+                                    </div>
+                                    <input class="form-control mt-2" id="correoCliente" type="email" placeholder="Correo electronico">
+                                    <input class="form-control mt-2" id="telefonoCliente" placeholder="Numero de contacto">
+                                    <button class="btn btn-warning w-100 mt-3" type="submit">Guardar cliente</button>
+                                </form>
+                            </div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Nueva interaccion</h2><p class="window-subtitle">Llamada, seguimiento, soporte o visita.</p></div></div>
+                                <form id="formInteraccionCliente" class="window-body">
+                                    <select class="form-select mb-2" id="interaccionCliente" required></select>
+                                    <select class="form-select mb-2" id="interaccionTipo" required><option>Seguimiento</option><option>Llamada</option><option>Correo</option><option>Visita</option><option>Soporte</option><option>Comercial</option></select>
+                                    <textarea class="form-control" id="interaccionDetalle" rows="3" placeholder="Detalle de la interaccion"></textarea>
+                                    <button class="btn btn-dark w-100 mt-3" type="submit">Registrar interaccion</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Filtros de clientes</h2><p class="window-subtitle">Frecuencia, tipo y busqueda en tiempo real.</p></div></div>
+                                <div class="window-body">
+                                    <div class="toolbar">
+                                        <input class="form-control wide" id="filtroClienteTexto" placeholder="Buscar cliente, NIT, correo o telefono" oninput="renderClientesCRM()">
+                                        <select class="form-select" id="filtroClienteTipo" onchange="renderClientesCRM()"><option value="">Todos los tipos</option><option>Natural</option><option>Juridico</option></select>
+                                        <select class="form-select" id="filtroClienteSegmento" onchange="renderClientesCRM()"><option value="">Frecuencia de interaccion</option><option>Nuevo</option><option>Esporadico</option><option>Frecuente</option></select>
+                                    </div>
+                                    <div id="crmGraficos" class="splitter"></div>
+                                </div>
+                                <div class="table-wrap">
+                                    <table class="table align-middle text-center"><thead><tr><th>ID</th><th>Cliente</th><th>Tipo</th><th>Contacto</th><th>Interacciones</th><th>Frecuencia</th></tr></thead><tbody id="tablaClientes"></tbody></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tab-pane fade" id="equipo" role="tabpanel">
+                    <div class="workspace-grid mt-3">
+                        <div class="window">
+                            <div class="window-head"><div><h2 class="window-title">Panel administrador</h2><p class="window-subtitle">Crear y modificar usuarios del ERP.</p></div></div>
+                            <form id="formUsuario" class="window-body">
+                                <input type="hidden" id="usuarioEditandoId">
+                                <label class="form-label" for="nombreUsuario">Nombre completo</label>
+                                <input class="form-control mb-2" id="nombreUsuario" required>
+                                <label class="form-label" for="loginUsuario">Usuario</label>
+                                <input class="form-control mb-2" id="loginUsuario" required>
+                                <label class="form-label" for="passwordUsuario">Contrasena</label>
+                                <input class="form-control mb-2" id="passwordUsuario" type="password" required>
+                                <label class="form-label" for="rolUsuario">Rol</label>
+                                <select class="form-select mb-3" id="rolUsuario"><option value="ADMINISTRADOR">Administrador</option><option value="ADMINISTRATIVO">Administrativo</option><option value="OPERATIVO">Operativo</option><option value="TECNICO">Tecnico</option><option value="COORDINADOR">Coordinador</option><option value="RECEPCIONISTA">Recepcionista</option></select>
+                                <div class="splitter">
+                                    <button class="btn btn-primary" id="btnUsuarioSubmit" type="submit">Guardar usuario</button>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="limpiarUsuarioForm()">Limpiar</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="window">
+                            <div class="window-head"><div><h2 class="window-title">Matriz de personal</h2><p class="window-subtitle">ID, usuario, rol, estado y acciones.</p></div></div>
+                            <div class="window-body">
+                                <div class="toolbar">
+                                    <input class="form-control wide" id="filtroUsuarioTexto" placeholder="Buscar usuario, nombre o rol" oninput="renderUsuarios()">
+                                    <select class="form-select" id="filtroUsuarioEstado" onchange="renderUsuarios()"><option value="">Todos</option><option value="SI">Activos</option><option value="NO">Inactivos</option></select>
+                                </div>
+                            </div>
+                            <div class="table-wrap">
+                                <table class="table align-middle text-center"><thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tablaUsuarios"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
     </main>
-    <script src="app.js"></script>
-  </body>
+
+    <div class="modal fade" id="modalVerDiagnostico" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Reporte tecnico</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="cuerpoVerDiagnostico"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const SESSION_KEY = 'oxyliveSession';
+        let procesosGlobales = [];
+        let clientesCRM = [];
+        let inventarioGlobal = [];
+        let usuariosGlobales = [];
+        let sesionActual = null;
+        let estadoFiltroActivo = null;
+
+        const $ = (id) => document.getElementById(id);
+
+        function limpiarTexto(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function normalizarTexto(valor) {
+            return String(valor || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/Ãƒ.|Ã‚./g, '')
+                .toUpperCase();
+        }
+
+        function rolEsTecnico(rol) {
+            return ['TECNICO', 'OPERATIVO', 'TRABAJADOR', 'TECNICO CAMPO', 'TECNICO TALLER'].includes((rol || '').toUpperCase());
+        }
+
+        function obtenerSesion() {
+            try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+            catch { return null; }
+        }
+
+        function protegerAdmin() {
+            const sesion = obtenerSesion();
+            if (!sesion) { window.location.href = '/login'; return null; }
+            if (rolEsTecnico(sesion.rol)) { window.location.href = '/operativo'; return null; }
+            sesionActual = sesion;
+            $('sessionAdminLabel').innerText = `${sesion.nombre} - ${sesion.rol}`;
+            $('vistaAdminRol').value = (sesion.rol || '').toUpperCase();
+            if ((sesion.rol || '').toUpperCase() !== 'ADMINISTRADOR') $('tabEquipoNav')?.classList.add('d-none');
+            return sesion;
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem(SESSION_KEY);
+            window.location.href = '/login';
+        }
+
+        function difHoras(inicio, fin) {
+            if (!inicio || !fin) return 'N/A';
+            const realMs = new Date(fin.replace(' ', 'T')) - new Date(inicio.replace(' ', 'T'));
+            if (!Number.isFinite(realMs)) return 'N/A';
+            const horas = Math.max(0, realMs / 3600000);
+            return horas < 24 ? `${horas.toFixed(1)} h` : `${(horas / 24).toFixed(1)} d`;
+        }
+
+        async function cargarTablas() {
+            try {
+                const [resProc, resInv, resCli, resUsu, resIng, resMov, resMan, resCrm] = await Promise.all([
+                    fetch('/procesos'), fetch('/inventario'), fetch('/clientes/'), fetch('/usuarios'),
+                    fetch('/inventario/ingresos'), fetch('/inventario/movimientos'), fetch('/inventario/salidas-manuales'), fetch('/clientes/crm/resumen')
+                ]);
+
+                procesosGlobales = await resProc.json();
+                inventarioGlobal = await resInv.json();
+                const clientes = await resCli.json();
+                usuariosGlobales = await resUsu.json();
+                const ingresos = await resIng.json();
+                const movimientos = await resMov.json();
+                const manuales = await resMan.json();
+                const crm = await resCrm.json();
+                clientesCRM = crm.clientes || clientes;
+
+                $('selectCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)} - ${limpiarTexto(c.nit)}</option>`).join('');
+                $('interaccionCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)}</option>`).join('');
+                $('selectTecnico').innerHTML = usuariosGlobales.filter(u => rolEsTecnico(u.rol) && (u.activo || 'SI') !== 'NO').map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(u.rol)}</option>`).join('');
+
+                $('selectAbastecerItem').innerHTML = inventarioGlobal.map(i => `<option value="${i.id}">${limpiarTexto(i.nombre_insumo)}</option>`).join('');
+                $('selSalidaRepuesto').innerHTML = inventarioGlobal.map(i => `<option value="${limpiarTexto(i.nombre_insumo)}">${limpiarTexto(i.nombre_insumo)} (${i.cantidad_disponible})</option>`).join('');
+                $('tablaIngresos').innerHTML = ingresos.map(i => `<tr><td>${limpiarTexto(i.fecha || '')}</td><td>${limpiarTexto(i.nombre_repuesto)}</td><td>${i.cantidad}</td></tr>`).join('') || `<tr><td colspan="3" class="empty-state">Sin entradas registradas.</td></tr>`;
+                $('tablaMovimientosCompleta').innerHTML = [
+                    ...movimientos.map(m => ({ tipo: m.ods || 'ODS', cliente: m.cliente || '', repuesto: m.repuesto, cantidad: m.cantidad, destino: m.destino || '' })),
+                    ...manuales.map(m => ({ tipo: 'Manual', cliente: m.fecha || '', repuesto: m.nombre_repuesto, cantidad: m.cantidad, destino: m.motivo || '' }))
+                ].map(m => `<tr><td>${limpiarTexto(m.tipo)}</td><td>${limpiarTexto(m.cliente)}</td><td>${limpiarTexto(m.repuesto)}</td><td>${m.cantidad}</td><td>${limpiarTexto(m.destino)}</td></tr>`).join('') || `<tr><td colspan="5" class="empty-state">Sin movimientos.</td></tr>`;
+
+                renderTablaProcesos();
+                renderInventario();
+                renderClientesCRM(crm);
+                renderUsuarios();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function renderTablaProcesos() {
+            const texto = normalizarTexto($('filtroOdsTexto')?.value || '');
+            const servicio = $('filtroOdsServicio')?.value || '';
+            const equipo = $('filtroOdsEquipo')?.value || '';
+            const perfilActual = (sesionActual?.rol || '').toUpperCase();
+
+            let cPendiente = 0, cAprobacion = 0, cEjecucion = 0, cFinalizado = 0;
+            procesosGlobales.forEach(p => {
+                const estado = normalizarTexto(p.estado);
+                if (estado.includes('PENDIENTE')) cPendiente++;
+                else if (estado.includes('ESPERANDO')) cAprobacion++;
+                else if (estado.includes('APROBADO')) cEjecucion++;
+                else if (estado.includes('FINALIZADO')) cFinalizado++;
+            });
+            $('kpiPendiente').innerText = cPendiente;
+            $('kpiAprobacion').innerText = cAprobacion;
+            $('kpiEjecucion').innerText = cEjecucion;
+            $('kpiFinalizado').innerText = cFinalizado;
+
+            const visibles = procesosGlobales.filter(p => {
+                const estado = normalizarTexto(p.estado);
+                const busca = normalizarTexto(`${p.ods} ${p.tipo_tarea} ${p.tipo_equipo} ${p.marca_equipo} ${p.modelo_equipo} ${p.cliente} ${p.tecnico}`);
+                return (!estadoFiltroActivo || estado.includes(estadoFiltroActivo))
+                    && (!texto || busca.includes(texto))
+                    && (!servicio || p.modalidad_servicio === servicio)
+                    && (!equipo || p.tipo_equipo === equipo);
+            });
+
+            $('tablaProcesos').innerHTML = visibles.map(p => {
+                const estado = normalizarTexto(p.estado);
+                let estadoPill = 'pill-muted';
+                let progressClass = 'bg-secondary';
+                let accion = `<span class="pill pill-muted">En evaluacion</span>`;
+
+                if (estado.includes('ESPERANDO')) {
+                    estadoPill = 'pill-amber'; progressClass = 'bg-warning';
+                    accion = `<button class="btn btn-sm btn-outline-primary" onclick="verDiagnostico(${p.id})">Ver reporte</button>`;
+                    if (['ADMINISTRADOR', 'ADMINISTRATIVO', 'COORDINADOR'].includes(perfilActual)) accion += `<button class="btn btn-sm btn-success" onclick="cambiarEstadoOds(${p.id}, 'aprobar')">Autorizar</button>`;
+                } else if (estado.includes('APROBADO')) {
+                    estadoPill = 'pill-blue'; progressClass = 'bg-primary'; accion = `<span class="pill pill-blue">En ejecucion</span>`;
+                } else if (estado.includes('FINALIZADO')) {
+                    estadoPill = 'pill-green'; progressClass = 'bg-success'; accion = `<span class="pill pill-green">Cerrada</span>`;
+                }
+
+                if (perfilActual === 'ADMINISTRADOR') accion += `<button class="btn btn-sm btn-outline-danger" onclick="eliminarOds(${p.id})">Eliminar</button>`;
+
+                let tiempos = `<div class="small text-start"><strong>Ingreso:</strong> ${limpiarTexto(p.fecha_creacion || 'N/A')}`;
+                if (p.fecha_diagnostico) tiempos += `<br><span>Diag: ${difHoras(p.fecha_creacion, p.fecha_diagnostico)}</span>`;
+                if (p.fecha_aprobacion) tiempos += `<br><span>Aprob: ${difHoras(p.fecha_diagnostico, p.fecha_aprobacion)}</span>`;
+                if (p.fecha_finalizacion) tiempos += `<br><strong>Total:</strong> ${difHoras(p.fecha_creacion, p.fecha_finalizacion)}`;
+                tiempos += `</div>`;
+
+                return `<tr>
+                    <td><span class="pill pill-dark">#${limpiarTexto(p.ods || 'N/A')}</span></td>
+                    <td class="text-start"><strong>${limpiarTexto(p.modalidad_servicio || 'Servicio')}</strong><br><small class="text-muted">${limpiarTexto(p.tipo_equipo || '')} ${limpiarTexto(p.marca_equipo || '')} ${limpiarTexto(p.modelo_equipo || '')} - ${p.horas_ingreso || 0} h</small><br><small>${limpiarTexto(p.tipo_tarea)}</small></td>
+                    <td class="text-start"><strong>${limpiarTexto(p.cliente)}</strong><br><small class="text-muted">${limpiarTexto(p.tecnico)}</small></td>
+                    <td>${tiempos}</td>
+                    <td><div class="progress"><div class="progress-bar ${progressClass}" style="width:${p.porcentaje_avance || 0}%"></div></div><small>${p.porcentaje_avance || 0}%</small></td>
+                    <td><span class="pill ${estadoPill}">${limpiarTexto(p.estado)}</span></td>
+                    <td><div class="inline-actions">${accion}</div></td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="7" class="empty-state">No hay ODS con estos filtros.</td></tr>`;
+        }
+
+        function toggleFiltroEstado(estado, elemento) {
+            estadoFiltroActivo = estadoFiltroActivo === estado ? null : estado;
+            document.querySelectorAll('.metric').forEach(item => item.classList.toggle('dimmed', estadoFiltroActivo && item !== elemento));
+            $('etiquetaFiltro').classList.toggle('d-none', !estadoFiltroActivo);
+            $('etiquetaFiltro').innerText = estadoFiltroActivo ? `Estado: ${estadoFiltroActivo}` : 'Filtro activo';
+            renderTablaProcesos();
+        }
+
+        function renderInventario() {
+            const texto = normalizarTexto($('filtroInventarioTexto')?.value || '');
+            const estadoFiltro = $('filtroInventarioEstado')?.value || '';
+            const items = inventarioGlobal.filter(i => {
+                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
+                const estado = critico ? 'CRITICO' : 'OPTIMO';
+                return (!texto || normalizarTexto(i.nombre_insumo).includes(texto)) && (!estadoFiltro || estado === estadoFiltro);
+            });
+            $('tablaInventario').innerHTML = items.map(i => {
+                const critico = Number(i.cantidad_disponible || 0) <= Number(i.stock_minimo_alerta || 0);
+                return `<tr><td><strong>${limpiarTexto(i.nombre_insumo)}</strong></td><td>${i.cantidad_disponible}</td><td>${limpiarTexto(i.unidad_medida)}</td><td>${i.stock_minimo_alerta}</td><td><span class="pill ${critico ? 'pill-red' : 'pill-green'}">${critico ? 'CRITICO' : 'OPTIMO'}</span></td></tr>`;
+            }).join('') || `<tr><td colspan="5" class="empty-state">No hay insumos con estos filtros.</td></tr>`;
+        }
+
+        function barraCRM(label, valor, total) {
+            const porcentaje = total ? Math.round((valor / total) * 100) : 0;
+            return `<div class="mini-chart"><div class="mini-chart-label"><span>${limpiarTexto(label)}</span><span>${valor}</span></div><div class="progress mt-2"><div class="progress-bar bg-info" style="width:${porcentaje}%"></div></div></div>`;
+        }
+
+        function renderClientesCRM(crmData = null) {
+            const data = crmData || { clientes: clientesCRM };
+            const texto = normalizarTexto($('filtroClienteTexto')?.value || '');
+            const tipo = $('filtroClienteTipo')?.value || '';
+            const frecuencia = $('filtroClienteSegmento')?.value || '';
+            const clientes = (data.clientes || clientesCRM).filter(c => {
+                const busca = normalizarTexto(`${c.razon_social} ${c.nit} ${c.correo} ${c.telefono}`);
+                return (!texto || busca.includes(texto)) && (!tipo || c.tipo_cliente === tipo) && (!frecuencia || c.segmento === frecuencia);
+            });
+            const totalInteracciones = clientes.reduce((sum, c) => sum + (c.total_interacciones || 0), 0);
+            $('crmKpis').innerHTML = [
+                ['Clientes visibles', clientes.length, 'pending'],
+                ['Interacciones', totalInteracciones, 'running'],
+                ['Frecuentes', clientes.filter(c => c.segmento === 'Frecuente').length, 'done'],
+                ['Nuevos', clientes.filter(c => c.segmento === 'Nuevo').length, 'waiting'],
+            ].map(([label, value, cls]) => `<div class="metric ${cls}"><span class="metric-label">${label}</span><span class="metric-value">${value}</span><span class="metric-line"></span></div>`).join('');
+
+            const tipos = {};
+            clientes.forEach(c => Object.entries(c.tipos_interaccion || {}).forEach(([k, v]) => tipos[k] = (tipos[k] || 0) + v));
+            $('crmGraficos').innerHTML = Object.entries(tipos).map(([k, v]) => barraCRM(k, v, totalInteracciones)).join('') || `<div class="empty-state">No hay interacciones con estos filtros.</div>`;
+            $('tablaClientes').innerHTML = clientes.map(c => `<tr><td>${c.id}</td><td class="text-start"><strong>${limpiarTexto(c.razon_social)}</strong><br><small>${limpiarTexto(c.nit)}</small></td><td>${limpiarTexto(c.tipo_cliente)}</td><td class="text-start">${limpiarTexto(c.correo)}<br><small>${limpiarTexto(c.telefono)}</small></td><td>${c.total_interacciones || 0}</td><td><span class="pill pill-dark">${limpiarTexto(c.segmento)}</span></td></tr>`).join('') || `<tr><td colspan="6" class="empty-state">No hay clientes con estos filtros.</td></tr>`;
+        }
+
+        function renderUsuarios() {
+            const texto = normalizarTexto($('filtroUsuarioTexto')?.value || '');
+            const estado = $('filtroUsuarioEstado')?.value || '';
+            const usuarios = usuariosGlobales.filter(u => {
+                const activo = u.activo || 'SI';
+                const busca = normalizarTexto(`${u.id} ${u.nombre} ${u.username} ${u.rol}`);
+                return (!texto || busca.includes(texto)) && (!estado || activo === estado);
+            });
+            $('tablaUsuarios').innerHTML = usuarios.map(u => {
+                const activo = (u.activo || 'SI') !== 'NO';
+                return `<tr><td>${u.id}</td><td class="text-start"><strong>${limpiarTexto(u.nombre)}</strong></td><td>${limpiarTexto(u.username || '')}</td><td><span class="pill pill-blue">${limpiarTexto(u.rol)}</span></td><td><span class="pill ${activo ? 'pill-green' : 'pill-muted'}">${activo ? 'Activo' : 'Inactivo'}</span></td><td><div class="inline-actions"><button class="btn btn-sm btn-outline-primary" onclick="editarUsuarioPorId(${u.id})">Editar</button><button class="btn btn-sm ${activo ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="cambiarEstadoUsuario(${u.id}, '${activo ? 'NO' : 'SI'}')">${activo ? 'Bajar' : 'Subir'}</button></div></td></tr>`;
+            }).join('') || `<tr><td colspan="6" class="empty-state">No hay usuarios con estos filtros.</td></tr>`;
+        }
+
+        async function cambiarEstadoOds(id, accion) {
+            await fetch(`/procesos/${id}/cambiar-estado?accion=${accion}`, { method: 'POST' });
+            cargarTablas();
+        }
+
+        async function eliminarOds(id) {
+            const rol = (sesionActual?.rol || '').toUpperCase();
+            if (rol !== 'ADMINISTRADOR') { alert('Solo el administrador puede eliminar ODS.'); return; }
+            if (!confirm('Esta accion eliminara la ODS de la bitacora. Deseas continuar?')) return;
+            const res = await fetch(`/procesos/${id}?rol=${rol}`, { method: 'DELETE' });
+            if (!res.ok) { alert('No fue posible eliminar la ODS.'); return; }
+            cargarTablas();
+        }
+
+        async function verDiagnostico(id) {
+            const res = await fetch(`/procesos/${id}/diagnostico`);
+            const diag = await res.json();
+            $('cuerpoVerDiagnostico').innerHTML = diag.error
+                ? `<div class="empty-state">El reporte no esta disponible.</div>`
+                : `<div class="splitter"><div class="mini-chart"><strong>Equipo</strong><br>${limpiarTexto(diag.tipo_equipo)}</div><div class="mini-chart"><strong>Bateria</strong><br>${limpiarTexto(diag.estado_bateria)}</div><div class="mini-chart"><strong>Compresor</strong><br>${limpiarTexto(diag.estado_compresor)}</div><div class="mini-chart"><strong>Tamiz</strong><br>${limpiarTexto(diag.estado_tamiz)}</div></div><hr><strong>Observaciones</strong><p class="mb-0 mt-2">${limpiarTexto(diag.observaciones || 'Sin observaciones.')}</p>`;
+            bootstrap.Modal.getOrCreateInstance($('modalVerDiagnostico')).show();
+        }
+
+        function limpiarUsuarioForm() {
+            $('usuarioEditandoId').value = '';
+            $('formUsuario').reset();
+            $('passwordUsuario').required = true;
+            $('btnUsuarioSubmit').textContent = 'Guardar usuario';
+        }
+
+        function editarUsuarioPorId(id) {
+            const usuario = usuariosGlobales.find(u => u.id === id);
+            if (!usuario) return;
+            $('usuarioEditandoId').value = usuario.id;
+            $('nombreUsuario').value = usuario.nombre || '';
+            $('loginUsuario').value = usuario.username || '';
+            $('passwordUsuario').value = '';
+            $('passwordUsuario').required = false;
+            $('rolUsuario').value = usuario.rol || 'OPERATIVO';
+            $('btnUsuarioSubmit').textContent = 'Actualizar usuario';
+        }
+
+        async function cambiarEstadoUsuario(id, activo) {
+            await fetch(`/usuarios/${id}/estado?activo=${activo}`, { method: 'POST' });
+            cargarTablas();
+        }
+
+        $('formOrden').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch('/procesos/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                ods: $('odsTarea').value,
+                tipo_tarea: $('descTarea').value,
+                tipo_equipo: $('tipoEquipoOds').value,
+                marca_equipo: $('marcaEquipoOds').value,
+                modelo_equipo: $('modeloEquipoOds').value,
+                horas_ingreso: parseFloat($('horasEquipoOds').value || 0),
+                modalidad_servicio: $('modalidadServicioOds').value,
+                id_cliente: parseInt($('selectCliente').value),
+                id_trabajador_asignado: parseInt($('selectTecnico').value)
+            }) });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formCliente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch('/clientes/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                razon_social: $('nombreCliente').value,
+                tipo_cliente: $('tipoCliente').value,
+                nit: $('nitCliente').value,
+                correo: $('correoCliente').value,
+                telefono: $('telefonoCliente').value
+            }) });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formInteraccionCliente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch(`/clientes/${$('interaccionCliente').value}/interacciones`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ tipo: $('interaccionTipo').value, detalle: $('interaccionDetalle').value }) });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formUsuario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = $('usuarioEditandoId').value;
+            const payload = { nombre: $('nombreUsuario').value, username: $('loginUsuario').value, rol: $('rolUsuario').value, activo: 'SI' };
+            if ($('passwordUsuario').value) payload.password = $('passwordUsuario').value;
+            const url = id ? `/usuarios/${id}` : '/usuarios';
+            const method = id ? 'PUT' : 'POST';
+            await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(id ? payload : { ...payload, password: $('passwordUsuario').value }) });
+            limpiarUsuarioForm();
+            cargarTablas();
+        });
+
+        $('formItem').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch('/inventario/nuevo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre_insumo: $('nombreItem').value, cantidad_disponible: parseFloat($('cantItem').value), unidad_medida: $('medidaItem').value, stock_minimo_alerta: parseFloat($('alertaItem').value) }) });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formAbastecerItem').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch(`/inventario/${$('selectAbastecerItem').value}/abastecer?cantidad=${$('cantAbastecer').value}`, { method: 'POST' });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('formSalidaManual').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetch(`/inventario/salida-manual?nombre=${encodeURIComponent($('selSalidaRepuesto').value)}&cantidad=${$('cantSalida').value}&motivo=${encodeURIComponent($('motivoSalida').value)}`, { method: 'POST' });
+            e.target.reset();
+            cargarTablas();
+        });
+
+        window.addEventListener('load', () => {
+            if (protegerAdmin()) cargarTablas();
+        });
+    </script>
+</body>
 </html>
+

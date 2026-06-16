@@ -1,64 +1,99 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Oxylive ERP | Acceso</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body class="login-page">
-    <main class="login-shell">
-      <section class="login-panel" aria-labelledby="login-title">
-        <div class="brand-block">
-          <div class="brand-mark">O2</div>
-          <div>
-            <p class="eyebrow">Oxylive Service LLC</p>
-            <h1 id="login-title">Acceso ERP</h1>
-          </div>
-        </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingreso ERP Oxylive</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <main class="login-layout">
+        <section class="login-panel">
+            <div class="login-box">
+                <div class="brand mb-4">
+                    <div class="brand-mark" style="background: var(--ox-teal); color: #fff;">O2</div>
+                    <div>
+                        <p class="brand-title text-dark">Oxylive Service LLC</p>
+                        <p class="brand-subtitle text-muted">ERP operativo y administrativo</p>
+                    </div>
+                </div>
 
-        <form id="loginForm" class="stack" autocomplete="on">
-          <label>
-            Usuario
-            <input id="username" name="username" type="text" autocomplete="username" required>
-          </label>
-          <label>
-            Contraseña
-            <input id="password" name="password" type="password" autocomplete="current-password" required>
-          </label>
-          <button class="primary-action" type="submit">Ingresar</button>
-          <p id="loginError" class="form-error" role="alert" hidden></p>
-        </form>
+                <p class="metric-label mb-2">Acceso centralizado</p>
+                <h1 class="fw-bold mb-2">Ingreso al sistema</h1>
+                <p class="text-muted mb-4">El perfil de usuario define automaticamente si se abre el panel administrativo o el panel operativo.</p>
 
-        <div class="demo-users" aria-label="Usuarios de prueba">
-          <p>Usuarios de prueba</p>
-          <div class="demo-grid">
-            <button type="button" data-fill-user="admin">Administrador</button>
-            <button type="button" data-fill-user="coordinador">Coordinador</button>
-            <button type="button" data-fill-user="recepcion">Recepcionista</button>
-            <button type="button" data-fill-user="campo">Tec. Campo</button>
-            <button type="button" data-fill-user="taller">Tec. Taller</button>
-          </div>
-          <small>Contraseña inicial: <strong>oxylive123</strong></small>
-        </div>
-      </section>
-      <aside class="login-aside">
-        <div class="metric-strip">
-          <article>
-            <strong>4</strong>
-            <span>Módulos conectados</span>
-          </article>
-          <article>
-            <strong>100%</strong>
-            <span>Trazabilidad ODS</span>
-          </article>
-          <article>
-            <strong>24/7</strong>
-            <span>Control operativo</span>
-          </article>
-        </div>
-      </aside>
+                <form id="loginForm" class="d-grid gap-3" autocomplete="on">
+                    <div>
+                        <label class="form-label" for="usuario">Usuario</label>
+                        <input class="form-control" id="usuario" autocomplete="username" required autofocus>
+                    </div>
+                    <div>
+                        <label class="form-label" for="password">Contrasena</label>
+                        <input class="form-control" id="password" type="password" autocomplete="current-password" required>
+                    </div>
+                    <button class="btn btn-dark w-100" id="btnLogin" type="submit">Ingresar</button>
+                    <div id="loginError" class="alert alert-danger py-2 mb-0 d-none"></div>
+                </form>
+
+                <div class="window mt-4">
+                    <div class="window-body">
+                        <div class="d-flex align-items-center justify-content-between gap-3">
+                            <div>
+                                <p class="fw-bold mb-1">Usuarios administrados</p>
+                                <p class="text-muted small mb-0">Los accesos se crean y modifican desde Gestion de Equipo.</p>
+                            </div>
+                            <span class="pill pill-blue">Seguro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="login-visual">
+            <div>
+                <p class="metric-label text-white-50 mb-3">Operacion conectada</p>
+                <h2 class="display-5 mb-3">Bogota, campo y taller trabajando sobre la misma trazabilidad.</h2>
+                <p class="mb-0 opacity-75">ODS, clientes, personal, inventario y Kardex se actualizan desde una sola base operativa.</p>
+            </div>
+        </section>
     </main>
-    <script src="app.js"></script>
-  </body>
+
+    <script>
+        const SESSION_KEY = 'oxyliveSession';
+
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const error = document.getElementById('loginError');
+            const button = document.getElementById('btnLogin');
+            error.classList.add('d-none');
+            button.disabled = true;
+            button.textContent = 'Validando...';
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario: document.getElementById('usuario').value.trim(),
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                if (!response.ok) throw new Error('Usuario o contrasena incorrectos.');
+
+                const session = await response.json();
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+                window.location.href = session.redirect || '/admin';
+            } catch (err) {
+                error.textContent = err.message || 'No fue posible iniciar sesion.';
+                error.classList.remove('d-none');
+                button.disabled = false;
+                button.textContent = 'Ingresar';
+            }
+        });
+    </script>
+</body>
 </html>
+

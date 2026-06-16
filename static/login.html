@@ -3,99 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso - Oxylive ERP</title>
+    <title>Ingreso ERP Oxylive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="/static/erp-ui.css" rel="stylesheet">
-    <style>
-        .login-layout {
-            min-height: 100vh;
-            display: grid;
-            grid-template-columns: minmax(320px, 470px) minmax(320px, 1fr);
-            background: var(--ox-page);
-        }
-
-        .login-panel {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: clamp(1.5rem, 4vw, 3.5rem);
-            background: #ffffff;
-            border-right: 1px solid var(--ox-line);
-        }
-
-        .login-visual {
-            display: flex;
-            align-items: end;
-            padding: clamp(1.5rem, 4vw, 3.5rem);
-            color: #ffffff;
-            background:
-                linear-gradient(135deg, rgba(20, 33, 43, 0.88), rgba(0, 94, 103, 0.88)),
-                radial-gradient(circle at 72% 24%, rgba(255,255,255,0.22), transparent 25%),
-                #0f2730;
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 380px;
-        }
-
-        .login-mark {
-            display: grid;
-            place-items: center;
-            width: 58px;
-            height: 58px;
-            border-radius: 8px;
-            color: #ffffff;
-            background: var(--ox-teal);
-            font-weight: 800;
-            margin-bottom: 1.2rem;
-        }
-
-        .login-note {
-            margin-top: 1rem;
-            color: var(--ox-muted);
-            font-size: 0.84rem;
-            line-height: 1.45;
-        }
-
-        @media (max-width: 860px) {
-            .login-layout { grid-template-columns: 1fr; }
-            .login-visual { min-height: 260px; }
-        }
-    </style>
 </head>
 <body>
     <main class="login-layout">
         <section class="login-panel">
-            <div class="login-card">
-                <div class="login-mark">O2</div>
-                <p class="kpi-label mb-2">Oxylive Service LLC</p>
-                <h1 class="fw-bold mb-2">Ingreso al ERP</h1>
-                <p class="text-muted mb-4">Una sola entrada para direccionar al equipo administrativo y operativo.</p>
-
-                <form id="loginForm" class="d-grid gap-3">
+            <div class="login-box">
+                <div class="brand mb-4">
+                    <div class="brand-mark" style="background: var(--ox-teal); color: #fff;">O2</div>
                     <div>
-                        <label class="form-label small fw-bold text-muted">Usuario</label>
-                        <input class="form-control" id="usuario" autocomplete="username" required>
+                        <p class="brand-title text-dark">Oxylive Service LLC</p>
+                        <p class="brand-subtitle text-muted">ERP operativo y administrativo</p>
+                    </div>
+                </div>
+
+                <p class="metric-label mb-2">Acceso centralizado</p>
+                <h1 class="fw-bold mb-2">Ingreso al sistema</h1>
+                <p class="text-muted mb-4">El perfil de usuario define automaticamente si se abre el panel administrativo o el panel operativo.</p>
+
+                <form id="loginForm" class="d-grid gap-3" autocomplete="on">
+                    <div>
+                        <label class="form-label" for="usuario">Usuario</label>
+                        <input class="form-control" id="usuario" autocomplete="username" required autofocus>
                     </div>
                     <div>
-                        <label class="form-label small fw-bold text-muted">Contrasena</label>
+                        <label class="form-label" for="password">Contrasena</label>
                         <input class="form-control" id="password" type="password" autocomplete="current-password" required>
                     </div>
-                    <button class="btn btn-dark w-100 py-2" type="submit">Ingresar</button>
+                    <button class="btn btn-dark w-100" id="btnLogin" type="submit">Ingresar</button>
                     <div id="loginError" class="alert alert-danger py-2 mb-0 d-none"></div>
                 </form>
 
-                <div class="login-note">
-                    Los accesos son administrados desde Gestion de Equipo. Solicita tu usuario y contrasena al administrador.
+                <div class="window mt-4">
+                    <div class="window-body">
+                        <div class="d-flex align-items-center justify-content-between gap-3">
+                            <div>
+                                <p class="fw-bold mb-1">Usuarios administrados</p>
+                                <p class="text-muted small mb-0">Los accesos se crean y modifican desde Gestion de Equipo.</p>
+                            </div>
+                            <span class="pill pill-blue">Seguro</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
+
         <section class="login-visual">
             <div>
-                <h2 class="fw-bold mb-3">Operacion conectada</h2>
-                <p class="mb-0 opacity-75">Bogota, campo y taller trabajando sobre la misma trazabilidad de ordenes, inventario y cierres.</p>
+                <p class="metric-label text-white-50 mb-3">Operacion conectada</p>
+                <h2 class="display-5 mb-3">Bogota, campo y taller trabajando sobre la misma trazabilidad.</h2>
+                <p class="mb-0 opacity-75">ODS, clientes, personal, inventario y Kardex se actualizan desde una sola base operativa.</p>
             </div>
         </section>
     </main>
@@ -106,14 +66,17 @@
         document.getElementById('loginForm').addEventListener('submit', async (event) => {
             event.preventDefault();
             const error = document.getElementById('loginError');
+            const button = document.getElementById('btnLogin');
             error.classList.add('d-none');
+            button.disabled = true;
+            button.textContent = 'Validando...';
 
             try {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        usuario: document.getElementById('usuario').value,
+                        usuario: document.getElementById('usuario').value.trim(),
                         password: document.getElementById('password').value
                     })
                 });
@@ -122,10 +85,12 @@
 
                 const session = await response.json();
                 localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-                window.location.href = session.redirect;
+                window.location.href = session.redirect || '/admin';
             } catch (err) {
                 error.textContent = err.message || 'No fue posible iniciar sesion.';
                 error.classList.remove('d-none');
+                button.disabled = false;
+                button.textContent = 'Ingresar';
             }
         });
     </script>
