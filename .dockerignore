@@ -1,0 +1,13 @@
+.git
+.gitignore
+.angular
+frontend/.angular
+frontend/node_modules
+frontend/dist
+node_modules
+dist
+tmp
+output
+__pycache__
+*.pyc
+*.zip

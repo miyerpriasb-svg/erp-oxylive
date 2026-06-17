@@ -1,15 +1,20 @@
-# Usar una imagen base de Python
+FROM node:22-alpine AS angular-build
+
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build:production
+
+
 FROM python:3.11-slim
 
-# Directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instalar dependencias (asumiendo que tienes un archivo requirements.txt)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el resto del código
 COPY . .
+COPY --from=angular-build /frontend/dist/erp-oxylive/browser ./angular-dist
 
-# Comando para arrancar tu API
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-3000}"]

@@ -1,0 +1,78 @@
+<main class="login-shell">
+  <section class="login-workspace" aria-labelledby="login-title">
+    <div class="login-content">
+      <header class="brand">
+        <span class="brand-mark" aria-hidden="true">O2</span>
+        <span>
+          <strong>Oxylive Service LLC</strong>
+          <small>ERP operativo y administrativo</small>
+        </span>
+      </header>
+
+      <div class="heading">
+        <p class="eyebrow">Acceso centralizado</p>
+        <h1 id="login-title">Control operativo Oxylive</h1>
+        <p>Ingresa con el perfil asignado. El sistema abre automaticamente tu espacio administrativo u operativo.</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label for="usuario">Usuario</label>
+        <input
+          id="usuario"
+          type="text"
+          formControlName="usuario"
+          autocomplete="username"
+          [class.invalid]="form.controls.usuario.touched && form.controls.usuario.invalid"
+          autofocus
+        >
+        @if (form.controls.usuario.touched && form.controls.usuario.invalid) {
+          <span class="field-error">Ingresa tu usuario.</span>
+        }
+
+        <label for="password">Contrasena</label>
+        <div class="password-field">
+          <input
+            id="password"
+            [type]="passwordVisible() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+            [class.invalid]="form.controls.password.touched && form.controls.password.invalid"
+          >
+          <button type="button" class="visibility-button" (click)="togglePassword()" [attr.aria-label]="passwordVisible() ? 'Ocultar contrasena' : 'Mostrar contrasena'">
+            {{ passwordVisible() ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="field-error">Ingresa tu contrasena.</span>
+        }
+
+        @if (errorMessage()) {
+          <div class="login-error" role="alert">{{ errorMessage() }}</div>
+        }
+
+        <button class="submit-button" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Validando acceso...' : 'Ingresar' }}
+        </button>
+      </form>
+
+      <footer class="access-note">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span><strong>Accesos administrados</strong><small>Los usuarios y cargos se controlan desde Gestion de Equipo.</small></span>
+      </footer>
+    </div>
+  </section>
+
+  <section class="login-visual" aria-label="Operacion conectada Oxylive">
+    <div class="visual-overlay"></div>
+    <div class="visual-content">
+      <p class="eyebrow">Operacion conectada</p>
+      <h2>Bogota, campo y taller en una sola mesa de control.</h2>
+      <p>ODS, clientes, personal, inventario y Kardex trabajan sobre la misma operacion.</p>
+      <div class="visual-status">
+        <span>Administracion</span>
+        <span>Campo</span>
+        <span>Taller</span>
+      </div>
+    </div>
+  </section>
+</main>

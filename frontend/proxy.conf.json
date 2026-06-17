@@ -1,0 +1,22 @@
+{
+  "/auth": {
+    "target": "https://erp-oxylive.onrender.com",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/admin": {
+    "target": "https://erp-oxylive.onrender.com",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/operativo": {
+    "target": "https://erp-oxylive.onrender.com",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/static": {
+    "target": "https://erp-oxylive.onrender.com",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

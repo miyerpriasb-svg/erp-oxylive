@@ -1,6 +1,7 @@
 import os
+from pathlib import Path
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import database, models
 import migrations
@@ -10,6 +11,8 @@ models.Base.metadata.create_all(bind=database.engine)
 migrations.ensure_schema()
 
 app = FastAPI()
+ANGULAR_DIST = Path(os.getenv("ANGULAR_DIST", "angular-dist"))
+PROCESS_DIAGRAM = Path("static/documentos/ERP_Oxylive_Diagrama_Completo_Procesos.pdf")
 
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -23,14 +26,36 @@ def render_static_html(filename: str, error_label: str) -> HTMLResponse:
         return HTMLResponse(content=f"<h1>Error: {error_label} no encontrado</h1>", status_code=404)
 
 
+@app.get("/diagrama-procesos", include_in_schema=False)
+async def mostrar_diagrama_procesos():
+    if not PROCESS_DIAGRAM.is_file():
+        return HTMLResponse(content="<h1>Diagrama de procesos no disponible</h1>", status_code=404)
+    return FileResponse(PROCESS_DIAGRAM, media_type="application/pdf")
+
+
 @app.get("/")
 async def raiz():
-    return RedirectResponse(url="/login")
+    return RedirectResponse(url="/login/")
 
 
-@app.get("/login", response_class=HTMLResponse)
-async def mostrar_login(request: Request):
-    return render_static_html("login.html", "login.html")
+@app.get("/login", include_in_schema=False)
+async def redirigir_login():
+    return RedirectResponse(url="/login/")
+
+
+@app.get("/login/{asset_path:path}", include_in_schema=False)
+async def mostrar_login_angular(asset_path: str):
+    index_file = ANGULAR_DIST / "index.html"
+    if not index_file.is_file():
+        if asset_path:
+            return HTMLResponse(content="<h1>Frontend Angular no compilado</h1>", status_code=404)
+        return render_static_html("login.html", "login.html")
+
+    dist_root = ANGULAR_DIST.resolve()
+    requested = (ANGULAR_DIST / asset_path).resolve()
+    if asset_path and requested.is_file() and dist_root in requested.parents:
+        return FileResponse(requested)
+    return FileResponse(index_file)
 
 
 @app.get("/operativo", response_class=HTMLResponse)
