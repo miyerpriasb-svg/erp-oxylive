@@ -1,21 +1,21 @@
 :root {
-    --ox-ink: #101923;
-    --ox-ink-2: #1c2a35;
-    --ox-muted: #667684;
-    --ox-page: #eaf0f3;
+    --ox-ink: #241b3d;
+    --ox-ink-2: #403653;
+    --ox-muted: #746e83;
+    --ox-page: #f2f0f8;
     --ox-panel: rgba(255, 255, 255, 0.94);
     --ox-panel-solid: #ffffff;
-    --ox-line: #d4dfe5;
-    --ox-line-strong: #aebfc8;
-    --ox-teal: #006f78;
-    --ox-cyan: #14a4b0;
-    --ox-blue: #2d6f9f;
-    --ox-green: #16845d;
+    --ox-line: #e2deeb;
+    --ox-line-strong: #c7c0d6;
+    --ox-teal: #512cc7;
+    --ox-cyan: #6a48d8;
+    --ox-blue: #56599a;
+    --ox-green: #3baa2f;
     --ox-amber: #b97712;
     --ox-red: #bd4040;
-    --ox-violet: #5a5fa8;
-    --ox-shadow: 0 22px 55px rgba(16, 25, 35, 0.14);
-    --ox-soft-shadow: 0 12px 28px rgba(16, 25, 35, 0.09);
+    --ox-violet: #512cc7;
+    --ox-shadow: 0 22px 55px rgba(45, 27, 96, 0.14);
+    --ox-soft-shadow: 0 12px 28px rgba(45, 27, 96, 0.09);
 }
 
 * {
@@ -32,9 +32,10 @@ body {
     font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: var(--ox-ink);
     background:
-        linear-gradient(135deg, rgba(0, 111, 120, 0.11) 0 25%, transparent 25% 100%),
-        linear-gradient(180deg, #f7fafb 0, var(--ox-page) 330px, #e6edf1 100%);
-    background-size: 560px 560px, auto;
+        radial-gradient(circle at 4% 4%, rgba(81, 44, 199, 0.13), transparent 25rem),
+        radial-gradient(circle at 95% 18%, rgba(79, 194, 62, 0.09), transparent 28rem),
+        linear-gradient(180deg, #fbfaff 0, var(--ox-page) 330px, #efedf5 100%);
+    background-size: auto;
     letter-spacing: 0;
 }
 
@@ -64,9 +65,10 @@ body::before {
     padding: 1.05rem 1.45rem 1.3rem;
     color: #ffffff;
     background:
-        linear-gradient(135deg, rgba(16, 25, 35, 0.98), rgba(0, 111, 120, 0.96) 58%, rgba(45, 111, 159, 0.98));
+        radial-gradient(circle at 82% -90%, rgba(79, 194, 62, 0.42), transparent 35%),
+        linear-gradient(118deg, #2d147f, #512cc7 56%, #56599a);
     border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 24px 60px rgba(16, 25, 35, 0.26);
+    box-shadow: 0 24px 60px rgba(44, 21, 125, 0.26);
     overflow: hidden;
 }
 
@@ -92,19 +94,28 @@ body::before {
     min-width: 0;
 }
 
-.brand-mark {
-    width: 50px;
-    height: 50px;
+.brand-logo-wrap {
+    width: 74px;
+    height: 54px;
     display: grid;
     place-items: center;
     flex: 0 0 auto;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 8px;
-    background:
-        linear-gradient(145deg, rgba(255,255,255,0.25), rgba(255,255,255,0.08)),
-        rgba(255, 255, 255, 0.11);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 12px 28px rgba(0,0,0,0.2);
-    font-weight: 900;
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 12px 28px rgba(25, 10, 78, 0.24);
+    overflow: hidden;
+}
+
+.brand-logo-wrap-light {
+    border-color: var(--ox-line);
+    box-shadow: 0 10px 24px rgba(45, 27, 96, 0.12);
+}
+
+.brand-logo {
+    width: 68px;
+    height: 50px;
+    object-fit: contain;
 }
 
 .brand-title {
@@ -287,8 +298,8 @@ body::before {
 
 .module-tabs .nav-link.active {
     color: #ffffff;
-    background: linear-gradient(135deg, var(--ox-ink), var(--ox-teal));
-    box-shadow: 0 12px 26px rgba(0, 111, 120, 0.26);
+    background: linear-gradient(120deg, #3c1ca6, var(--ox-violet) 65%, #6948d5);
+    box-shadow: 0 12px 26px rgba(81, 44, 199, 0.26);
 }
 
 .module-tabs .nav-link.active::before {
@@ -335,7 +346,7 @@ body::before {
     position: absolute;
     inset: 0 auto 0 0;
     width: 4px;
-    background: linear-gradient(180deg, var(--ox-cyan), var(--ox-blue));
+    background: linear-gradient(180deg, var(--ox-violet), var(--ox-green));
 }
 
 .window + .window {
@@ -492,7 +503,7 @@ body::before {
 .form-control:focus,
 .form-select:focus {
     border-color: var(--ox-cyan);
-    box-shadow: 0 0 0 4px rgba(20, 164, 176, 0.16);
+    box-shadow: 0 0 0 4px rgba(81, 44, 199, 0.14);
 }
 
 .form-label {
@@ -519,18 +530,18 @@ body::before {
 }
 
 .btn-dark {
-    background: linear-gradient(135deg, var(--ox-ink), #29404d);
-    border-color: var(--ox-ink);
-    box-shadow: 0 10px 22px rgba(16, 25, 35, 0.2);
+    background: linear-gradient(120deg, #3c1ca6, var(--ox-violet));
+    border-color: var(--ox-violet);
+    box-shadow: 0 10px 22px rgba(81, 44, 199, 0.22);
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--ox-blue), #3c83b8);
-    border-color: var(--ox-blue);
+    background: linear-gradient(120deg, #3c1ca6, var(--ox-violet));
+    border-color: var(--ox-violet);
 }
 
 .btn-success {
-    background: linear-gradient(135deg, var(--ox-green), #22a56f);
+    background: linear-gradient(135deg, #318e27, #4fc23e);
     border-color: var(--ox-green);
 }
 
@@ -643,7 +654,7 @@ body::before {
     position: absolute;
     inset: 0 0 auto 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--ox-cyan), var(--ox-blue), var(--ox-green));
+    background: linear-gradient(90deg, var(--ox-violet), var(--ox-blue), var(--ox-green));
 }
 
 .mini-chart-label {
@@ -667,7 +678,8 @@ body::before {
     display: grid;
     grid-template-columns: minmax(360px, 500px) minmax(0, 1fr);
     background:
-        linear-gradient(180deg, #f9fbfc, #eaf0f3);
+        radial-gradient(circle at 8% 8%, rgba(79,194,62,.10), transparent 24rem),
+        linear-gradient(180deg, #fbfaff, #f1eef7);
 }
 
 .login-panel {
@@ -691,10 +703,10 @@ body::before {
     padding: clamp(1.5rem, 4vw, 3.7rem);
     color: #ffffff;
     background:
-        linear-gradient(90deg, rgba(16, 25, 35, 0.34), rgba(16, 25, 35, 0.08)),
+        linear-gradient(90deg, rgba(44, 20, 127, 0.78), rgba(81, 44, 199, 0.50)),
         url("assets/login-hero.png"),
-        linear-gradient(135deg, rgba(16, 25, 35, 0.95), rgba(0, 111, 120, 0.9) 54%, rgba(45, 111, 159, 0.92)),
-        #101923;
+        linear-gradient(135deg, #2d147f, #512cc7 54%, #56599a),
+        #2d147f;
     background-size: cover;
     background-position: center;
     overflow: hidden;
