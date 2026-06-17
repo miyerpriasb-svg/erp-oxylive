@@ -23,3 +23,8 @@ credentials.json
 # Archivos de revision local
 _revision_zip_erp_oxylive/
 erp-oxylive-web.zip
+
+# Documentacion y artefactos informativos locales
+output/
+tmp/
+static/documentos/

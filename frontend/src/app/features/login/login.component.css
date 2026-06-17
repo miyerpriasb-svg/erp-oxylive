@@ -129,7 +129,7 @@ input.invalid { border-color: #b93535; }
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  background: url('assets/login-hero.png') center/cover no-repeat;
+  background: url('/assets/login-hero.png') center/cover no-repeat;
   color: white;
 }
 .visual-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(9, 35, 43, .9), rgba(9, 35, 43, .35)); }

@@ -12,7 +12,6 @@ migrations.ensure_schema()
 
 app = FastAPI()
 ANGULAR_DIST = Path(os.getenv("ANGULAR_DIST", "angular-dist"))
-PROCESS_DIAGRAM = Path("static/documentos/ERP_Oxylive_Diagrama_Completo_Procesos.pdf")
 
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -24,13 +23,6 @@ def render_static_html(filename: str, error_label: str) -> HTMLResponse:
             return HTMLResponse(content=f.read(), status_code=200)
     except FileNotFoundError:
         return HTMLResponse(content=f"<h1>Error: {error_label} no encontrado</h1>", status_code=404)
-
-
-@app.get("/diagrama-procesos", include_in_schema=False)
-async def mostrar_diagrama_procesos():
-    if not PROCESS_DIAGRAM.is_file():
-        return HTMLResponse(content="<h1>Diagrama de procesos no disponible</h1>", status_code=404)
-    return FileResponse(PROCESS_DIAGRAM, media_type="application/pdf")
 
 
 @app.get("/")
@@ -56,6 +48,15 @@ async def mostrar_login_angular(asset_path: str):
     if asset_path and requested.is_file() and dist_root in requested.parents:
         return FileResponse(requested)
     return FileResponse(index_file)
+
+
+@app.get("/assets/{asset_path:path}", include_in_schema=False)
+async def mostrar_asset_angular(asset_path: str):
+    assets_root = (ANGULAR_DIST / "assets").resolve()
+    requested = (assets_root / asset_path).resolve()
+    if requested.is_file() and assets_root in requested.parents:
+        return FileResponse(requested)
+    return HTMLResponse(content="Asset no encontrado", status_code=404)
 
 
 @app.get("/operativo", response_class=HTMLResponse)
