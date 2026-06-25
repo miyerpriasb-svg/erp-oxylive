@@ -460,9 +460,11 @@
                 const nombre = normalizarTexto(cargo.nombre);
                 const enUso = usados.has(nombre);
                 const acciones = [`<button class="btn btn-sm btn-outline-primary" type="button" onclick="editarCargo(${cargo.id})">Editar</button>`];
-                if (cargo.protegido) acciones.push('<span class="pill pill-muted">Base</span>');
-                else if (enUso) acciones.push('<span class="pill pill-amber">En uso</span>');
-                else acciones.push(`<button class="btn btn-sm btn-outline-danger" type="button" onclick="eliminarCargo(${cargo.id})">Eliminar</button>`);
+                if (cargo.protegido) acciones.push('<span class="pill pill-muted">Protegido</span>');
+                else {
+                    if (enUso) acciones.push('<span class="pill pill-amber">En uso</span>');
+                    acciones.push(`<button class="btn btn-sm btn-outline-danger" type="button" onclick="eliminarCargo(${cargo.id})">Eliminar</button>`);
+                }
                 const compatibilidad = (cargo.especialidades || []).length
                     ? cargo.especialidades.map(item => `<span class="pill pill-green">${limpiarTexto(etiquetaEspecialidad(item))}</span>`).join(' ')
                     : '<span class="pill pill-muted">Sin especialidad</span>';
@@ -752,12 +754,16 @@
 
         async function eliminarCargo(id) {
             const nombre = cargosDisponibles().find(cargo => Number(cargo.id) === Number(id))?.nombre || 'este cargo';
-            if (!confirm(`Deseas eliminar el cargo ${nombre}?`)) return;
+            if (!confirm(`Deseas eliminar el cargo ${nombre}? Si esta asignado a empleados, se retirara de sus perfiles.`)) return;
             const res = await fetch(`/usuarios/cargos/${id}`, { method: 'DELETE' });
             if (!res.ok) {
                 const error = await res.json().catch(() => ({}));
                 alert(error.detail || 'No fue posible eliminar el cargo.');
                 return;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (data.usuarios_inactivados) {
+                alert(`Cargo eliminado. ${data.usuarios_inactivados} empleado(s) quedaron inactivos porque no tenian otro cargo.`);
             }
             cargarTablas();
         }

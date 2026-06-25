@@ -23,6 +23,7 @@ DEFAULT_CARGOS = [
     ("TECNICO DE COMPRESORES", "TECNICO", "COMPRESORES"),
 ]
 CARGOS_BASE_PROTEGIDOS = {nombre for nombre, _, _ in DEFAULT_CARGOS}
+CARGOS_NO_ELIMINABLES = {CARGO_PROTEGIDO}
 
 
 def normalizar_cargo(nombre: str) -> str:
@@ -72,6 +73,16 @@ def obtener_cargos(db: Session) -> List[models.Cargo]:
     return db.query(models.Cargo).order_by(models.Cargo.categoria, models.Cargo.nombre).all()
 
 
+def asegurar_cargo_personalizado(db: Session, nombre: str):
+    cargo = normalizar_cargo(nombre)
+    if not cargo:
+        return
+    if db.query(models.Cargo).filter(models.Cargo.nombre == cargo).first():
+        return
+    db.add(models.Cargo(nombre=cargo, categoria="ADMINISTRATIVO", especialidades=""))
+    db.commit()
+
+
 def normalizar_roles(roles: Union[str, List[str]], db: Session) -> str:
     if isinstance(roles, str):
         candidatos = [r.strip().upper() for r in roles.split(",")]
@@ -84,7 +95,8 @@ def normalizar_roles(roles: Union[str, List[str]], db: Session) -> str:
         if not rol:
             continue
         if rol not in roles_permitidos:
-            raise HTTPException(status_code=400, detail=f"Cargo no permitido: {rol}")
+            asegurar_cargo_personalizado(db, rol)
+            roles_permitidos.add(rol)
         if rol not in roles_limpios:
             roles_limpios.append(rol)
     if not roles_limpios:
@@ -139,7 +151,7 @@ def listar_cargos(db: Session = Depends(get_db)):
             "nombre": cargo.nombre,
             "categoria": cargo.categoria or "ADMINISTRATIVO",
             "especialidades": lista_especialidades(cargo.especialidades),
-            "protegido": normalizar_cargo(cargo.nombre) in CARGOS_BASE_PROTEGIDOS,
+            "protegido": normalizar_cargo(cargo.nombre) in CARGOS_NO_ELIMINABLES,
         }
         for cargo in obtener_cargos(db)
     ]
@@ -206,13 +218,27 @@ def eliminar_cargo(cargo_id: int, db: Session = Depends(get_db)):
     if not cargo:
         raise HTTPException(status_code=404, detail="Cargo no encontrado")
     nombre = normalizar_cargo(cargo.nombre)
-    if nombre in CARGOS_BASE_PROTEGIDOS:
-        raise HTTPException(status_code=400, detail="Los cargos base del sistema no se pueden eliminar")
-    if cargo_en_uso(db, nombre):
-        raise HTTPException(status_code=400, detail="No se puede eliminar un cargo asignado a empleados")
+    if nombre in CARGOS_NO_ELIMINABLES:
+        raise HTTPException(status_code=400, detail="Gerente General no se puede eliminar")
+    usuarios_actualizados = 0
+    usuarios_inactivados = 0
+    for usuario in db.query(models.Usuario).all():
+        roles = roles_usuario(usuario.rol)
+        if nombre not in roles:
+            continue
+        roles_restantes = [rol for rol in roles if rol != nombre]
+        usuario.rol = ", ".join(roles_restantes)
+        usuarios_actualizados += 1
+        if not roles_restantes:
+            usuario.activo = "NO"
+            usuarios_inactivados += 1
     db.delete(cargo)
     db.commit()
-    return {"mensaje": "Cargo eliminado"}
+    return {
+        "mensaje": "Cargo eliminado",
+        "usuarios_actualizados": usuarios_actualizados,
+        "usuarios_inactivados": usuarios_inactivados,
+    }
 
 
 @router.get("/usuarios")
