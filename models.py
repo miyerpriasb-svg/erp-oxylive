@@ -15,6 +15,7 @@ class Cargo(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, unique=True, index=True)
     categoria = Column(String, default="ADMINISTRATIVO")
+    especialidades = Column(String, default="")
 
 class Cliente(Base):
     __tablename__ = "clientes"

@@ -13,15 +13,15 @@ FALLBACK_USERS = {
 }
 
 DEFAULT_CARGOS = {
-    "GERENTE GENERAL": "ADMINISTRATIVO",
-    "COORDINADOR ADMINISTRATIVO": "ADMINISTRATIVO",
-    "COORDINADOR COMERCIAL": "ADMINISTRATIVO",
-    "CONTADOR": "ADMINISTRATIVO",
-    "JURIDICO": "ADMINISTRATIVO",
-    "TECNICO DE ESTACIONARIOS": "TECNICO",
-    "TECNICO DE PORTATILES": "TECNICO",
-    "TECNICO DE LLENA": "TECNICO",
-    "TECNICO DE COMPRESORES": "TECNICO",
+    "GERENTE GENERAL": {"categoria": "ADMINISTRATIVO", "especialidades": []},
+    "COORDINADOR ADMINISTRATIVO": {"categoria": "ADMINISTRATIVO", "especialidades": []},
+    "COORDINADOR COMERCIAL": {"categoria": "ADMINISTRATIVO", "especialidades": []},
+    "CONTADOR": {"categoria": "ADMINISTRATIVO", "especialidades": []},
+    "JURIDICO": {"categoria": "ADMINISTRATIVO", "especialidades": []},
+    "TECNICO DE ESTACIONARIOS": {"categoria": "TECNICO", "especialidades": ["ESTACIONARIOS"]},
+    "TECNICO DE PORTATILES": {"categoria": "TECNICO", "especialidades": ["PORTATILES"]},
+    "TECNICO DE LLENA": {"categoria": "TECNICO", "especialidades": ["TAMICES"]},
+    "TECNICO DE COMPRESORES": {"categoria": "TECNICO", "especialidades": ["COMPRESORES"]},
 }
 
 
@@ -35,10 +35,18 @@ def roles_usuario(rol: str):
 
 
 def mapa_cargos(db: Session):
-    cargos = DEFAULT_CARGOS.copy()
+    cargos = {nombre: data.copy() for nombre, data in DEFAULT_CARGOS.items()}
     try:
         for cargo in db.query(models.Cargo).all():
-            cargos[(cargo.nombre or "").strip().upper()] = (cargo.categoria or "ADMINISTRATIVO").strip().upper()
+            especialidades = [
+                item.strip().upper()
+                for item in (cargo.especialidades or "").split(",")
+                if item.strip()
+            ]
+            cargos[(cargo.nombre or "").strip().upper()] = {
+                "categoria": (cargo.categoria or "ADMINISTRATIVO").strip().upper(),
+                "especialidades": especialidades,
+            }
     except Exception:
         pass
     return cargos
@@ -54,7 +62,12 @@ def validar_roles(rol: str, db: Session):
 
 def categorias_por_roles(roles, db: Session):
     cargos = mapa_cargos(db)
-    return {rol: cargos.get(rol, "ADMINISTRATIVO") for rol in roles}
+    return {rol: cargos.get(rol, {}).get("categoria", "ADMINISTRATIVO") for rol in roles}
+
+
+def especialidades_por_roles(roles, db: Session):
+    cargos = mapa_cargos(db)
+    return {rol: cargos.get(rol, {}).get("especialidades", []) for rol in roles}
 
 
 def destino_por_roles(roles, db: Session) -> str:
@@ -81,6 +94,7 @@ def login(data: LoginData, db: Session = Depends(get_db)):
             "rol": ", ".join(roles),
             "roles": roles,
             "categorias": categorias_por_roles(roles, db),
+            "especialidades": especialidades_por_roles(roles, db),
             "redirect": destino_por_roles(roles, db),
         }
 
@@ -91,6 +105,7 @@ def login(data: LoginData, db: Session = Depends(get_db)):
         session["usuario"] = usuario
         session["roles"] = roles
         session["categorias"] = categorias_por_roles(roles, db)
+        session["especialidades"] = especialidades_por_roles(roles, db)
         session["redirect"] = destino_por_roles(roles, db)
         return session
 

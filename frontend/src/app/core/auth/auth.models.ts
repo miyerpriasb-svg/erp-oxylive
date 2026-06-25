@@ -10,5 +10,6 @@ export interface UserSession {
   rol: string;
   roles: string[];
   categorias?: Record<string, string>;
+  especialidades?: Record<string, string[]>;
   redirect: '/admin' | '/operativo' | string;
 }

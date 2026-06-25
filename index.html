@@ -206,6 +206,12 @@
         }
 
         const ROLES_TECNICOS = ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'];
+        const ESPECIALIDADES_BASE = {
+            'TECNICO DE ESTACIONARIOS': ['ESTACIONARIOS'],
+            'TECNICO DE PORTATILES': ['PORTATILES'],
+            'TECNICO DE LLENA': ['TAMICES'],
+            'TECNICO DE COMPRESORES': ['COMPRESORES'],
+        };
 
         function rolesDesde(valor) {
             if (Array.isArray(valor)) return valor.map(r => normalizarTexto(r)).filter(Boolean);
@@ -223,13 +229,31 @@
             return rolesVisibles(valor).join(', ');
         }
 
+        function especialidadesDesde(valor) {
+            const especialidades = new Set();
+            if (valor && typeof valor === 'object' && valor.especialidades) {
+                Object.values(valor.especialidades).flat().forEach(item => {
+                    const limpio = normalizarTexto(item);
+                    if (limpio) especialidades.add(limpio);
+                });
+            }
+            rolesDesde(valor).forEach(rol => (ESPECIALIDADES_BASE[rol] || []).forEach(item => especialidades.add(item)));
+            return [...especialidades];
+        }
+
+        function etiquetaCompatibilidad(valor) {
+            const etiquetas = { TAMICES: 'tamices', COMPRESORES: 'compresores', ESTACIONARIOS: 'estacionarios', PORTATILES: 'portatiles' };
+            return etiquetas[normalizarTexto(valor)] || valor;
+        }
+
         function rolEsTecnico(valor) {
             const categorias = valor && typeof valor === 'object' && valor.categorias ? Object.values(valor.categorias).map(normalizarTexto) : [];
             return categorias.includes('TECNICO') || rolesDesde(valor).some(rol => ROLES_TECNICOS.includes(rol));
         }
 
         function usuarioTieneCargo(usuario, cargo) {
-            return rolesDesde(usuario).includes(cargo);
+            const requerido = normalizarTexto(cargo);
+            return rolesDesde(usuario).includes(requerido) || especialidadesDesde(usuario).includes(requerido);
         }
 
         function protegerOperativo() {
@@ -282,8 +306,8 @@
 
         function cargoDestinoPorServicio(servicio = $('tecTipoOrdenNueva')?.value || '') {
             const texto = normalizarTexto(servicio);
-            if (texto.includes('TAMIZ') || texto.includes('LLENADO') || texto.includes('RECARGA')) return 'TECNICO DE LLENA';
-            if (texto.includes('COMPRESOR')) return 'TECNICO DE COMPRESORES';
+            if (texto.includes('TAMIZ') || texto.includes('LLENADO') || texto.includes('RECARGA')) return 'TAMICES';
+            if (texto.includes('COMPRESOR')) return 'COMPRESORES';
             return '';
         }
 
@@ -291,8 +315,8 @@
             const seleccionActual = $('tecEspecialistaDestino').value;
             const cargo = cargoDestinoPorServicio();
             const especialistas = usuariosTecnicos.filter(u => (u.activo || 'SI') !== 'NO' && cargo && usuarioTieneCargo(u, cargo));
-            $('tecEspecialistaDestino').innerHTML = especialistas.map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(cargo)}</option>`).join('');
-            if (!especialistas.length) $('tecEspecialistaDestino').innerHTML = `<option value="">Sin especialista ${limpiarTexto(cargo || 'disponible')}</option>`;
+            $('tecEspecialistaDestino').innerHTML = especialistas.map(u => `<option value="${u.id}">${limpiarTexto(u.nombre)} - ${limpiarTexto(etiquetaCompatibilidad(cargo))}</option>`).join('');
+            if (!especialistas.length) $('tecEspecialistaDestino').innerHTML = `<option value="">Sin especialista ${limpiarTexto(etiquetaCompatibilidad(cargo || 'disponible'))}</option>`;
             if (seleccionActual && especialistas.some(u => String(u.id) === String(seleccionActual))) $('tecEspecialistaDestino').value = seleccionActual;
             $('tecEspecialistaDestino').disabled = !especialistas.length;
             actualizarEstadoFormularioSubOds();
@@ -386,10 +410,11 @@
 
         function opcionesSubOdsPermitidas() {
             const roles = rolesDesde(sesionActual);
-            const puedeEspecializada = roles.includes('TECNICO DE ESTACIONARIOS') || roles.includes('TECNICO DE PORTATILES');
+            const especialidades = especialidadesDesde(sesionActual);
+            const puedeEspecializada = especialidades.includes('ESTACIONARIOS') || especialidades.includes('PORTATILES');
             const opciones = [];
-            if (puedeEspecializada || roles.includes('TECNICO DE COMPRESORES')) opciones.push('Mantenimiento de compresor');
-            if (puedeEspecializada || roles.includes('TECNICO DE LLENA')) opciones.push('Llenado de tamices');
+            if (puedeEspecializada || especialidades.includes('COMPRESORES')) opciones.push('Mantenimiento de compresor');
+            if (puedeEspecializada || especialidades.includes('TAMICES')) opciones.push('Llenado de tamices');
             return [...new Set(opciones)];
         }
 

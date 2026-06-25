@@ -8,20 +8,21 @@ from database import get_db
 router = APIRouter(tags=["Modulo de Personal"])
 
 CATEGORIAS_CARGO = {"ADMINISTRATIVO", "TECNICO"}
+ESPECIALIDADES_CARGO = {"ESTACIONARIOS", "PORTATILES", "TAMICES", "COMPRESORES"}
 CARGO_PROTEGIDO = "GERENTE GENERAL"
 
 DEFAULT_CARGOS = [
-    ("GERENTE GENERAL", "ADMINISTRATIVO"),
-    ("COORDINADOR ADMINISTRATIVO", "ADMINISTRATIVO"),
-    ("COORDINADOR COMERCIAL", "ADMINISTRATIVO"),
-    ("CONTADOR", "ADMINISTRATIVO"),
-    ("JURIDICO", "ADMINISTRATIVO"),
-    ("TECNICO DE ESTACIONARIOS", "TECNICO"),
-    ("TECNICO DE PORTATILES", "TECNICO"),
-    ("TECNICO DE LLENA", "TECNICO"),
-    ("TECNICO DE COMPRESORES", "TECNICO"),
+    ("GERENTE GENERAL", "ADMINISTRATIVO", ""),
+    ("COORDINADOR ADMINISTRATIVO", "ADMINISTRATIVO", ""),
+    ("COORDINADOR COMERCIAL", "ADMINISTRATIVO", ""),
+    ("CONTADOR", "ADMINISTRATIVO", ""),
+    ("JURIDICO", "ADMINISTRATIVO", ""),
+    ("TECNICO DE ESTACIONARIOS", "TECNICO", "ESTACIONARIOS"),
+    ("TECNICO DE PORTATILES", "TECNICO", "PORTATILES"),
+    ("TECNICO DE LLENA", "TECNICO", "TAMICES"),
+    ("TECNICO DE COMPRESORES", "TECNICO", "COMPRESORES"),
 ]
-CARGOS_BASE_PROTEGIDOS = {nombre for nombre, _ in DEFAULT_CARGOS}
+CARGOS_BASE_PROTEGIDOS = {nombre for nombre, _, _ in DEFAULT_CARGOS}
 
 
 def normalizar_cargo(nombre: str) -> str:
@@ -35,11 +36,34 @@ def normalizar_categoria(categoria: str) -> str:
     return categoria_limpia
 
 
+def lista_especialidades(valor: Union[str, List[str], None]) -> List[str]:
+    if valor is None:
+        candidatos = []
+    elif isinstance(valor, str):
+        candidatos = [item.strip().upper() for item in valor.split(",")]
+    else:
+        candidatos = [str(item).strip().upper() for item in valor]
+    limpias = []
+    for item in candidatos:
+        item = normalizar_cargo(item)
+        if not item:
+            continue
+        if item not in ESPECIALIDADES_CARGO:
+            raise HTTPException(status_code=400, detail=f"Compatibilidad no permitida: {item}")
+        if item not in limpias:
+            limpias.append(item)
+    return limpias
+
+
+def texto_especialidades(valor: Union[str, List[str], None]) -> str:
+    return ", ".join(lista_especialidades(valor))
+
+
 def asegurar_cargos_base(db: Session):
     existentes = {normalizar_cargo(c.nombre) for c in db.query(models.Cargo).all()}
-    for nombre, categoria in DEFAULT_CARGOS:
+    for nombre, categoria, especialidades in DEFAULT_CARGOS:
         if nombre not in existentes:
-            db.add(models.Cargo(nombre=nombre, categoria=categoria))
+            db.add(models.Cargo(nombre=nombre, categoria=categoria, especialidades=especialidades))
     db.commit()
 
 
@@ -93,6 +117,18 @@ class UsuarioActualizar(BaseModel):
 class CargoNuevo(BaseModel):
     nombre: str
     categoria: str = "ADMINISTRATIVO"
+    especialidades: Optional[Union[str, List[str]]] = None
+
+
+class CargoActualizar(BaseModel):
+    nombre: Optional[str] = None
+    categoria: Optional[str] = None
+    especialidades: Optional[Union[str, List[str]]] = None
+
+
+def cargo_en_uso(db: Session, nombre: str) -> bool:
+    cargo = normalizar_cargo(nombre)
+    return any(cargo in roles_usuario(usuario.rol) for usuario in db.query(models.Usuario).all())
 
 
 @router.get("/usuarios/cargos")
@@ -102,6 +138,7 @@ def listar_cargos(db: Session = Depends(get_db)):
             "id": cargo.id,
             "nombre": cargo.nombre,
             "categoria": cargo.categoria or "ADMINISTRATIVO",
+            "especialidades": lista_especialidades(cargo.especialidades),
             "protegido": normalizar_cargo(cargo.nombre) in CARGOS_BASE_PROTEGIDOS,
         }
         for cargo in obtener_cargos(db)
@@ -112,15 +149,55 @@ def listar_cargos(db: Session = Depends(get_db)):
 def crear_cargo(cargo: CargoNuevo, db: Session = Depends(get_db)):
     nombre = normalizar_cargo(cargo.nombre)
     categoria = normalizar_categoria(cargo.categoria)
+    especialidades = texto_especialidades(cargo.especialidades)
     if not nombre:
         raise HTTPException(status_code=400, detail="El nombre del cargo es obligatorio")
     if db.query(models.Cargo).filter(models.Cargo.nombre == nombre).first():
         raise HTTPException(status_code=400, detail="El cargo ya existe")
-    nuevo = models.Cargo(nombre=nombre, categoria=categoria)
+    nuevo = models.Cargo(nombre=nombre, categoria=categoria, especialidades=especialidades)
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
-    return {"id": nuevo.id, "nombre": nuevo.nombre, "categoria": nuevo.categoria}
+    return {
+        "id": nuevo.id,
+        "nombre": nuevo.nombre,
+        "categoria": nuevo.categoria,
+        "especialidades": lista_especialidades(nuevo.especialidades),
+    }
+
+
+@router.put("/usuarios/cargos/{cargo_id}")
+def actualizar_cargo(cargo_id: int, data: CargoActualizar, db: Session = Depends(get_db)):
+    cargo = db.query(models.Cargo).filter(models.Cargo.id == cargo_id).first()
+    if not cargo:
+        raise HTTPException(status_code=404, detail="Cargo no encontrado")
+
+    nombre_actual = normalizar_cargo(cargo.nombre)
+    nombre_nuevo = normalizar_cargo(data.nombre) if data.nombre is not None else nombre_actual
+    if not nombre_nuevo:
+        raise HTTPException(status_code=400, detail="El nombre del cargo es obligatorio")
+    if nombre_nuevo != nombre_actual:
+        if nombre_actual in CARGOS_BASE_PROTEGIDOS:
+            raise HTTPException(status_code=400, detail="Los cargos base del sistema no se pueden renombrar")
+        if cargo_en_uso(db, nombre_actual):
+            raise HTTPException(status_code=400, detail="No se puede renombrar un cargo asignado a empleados")
+        if db.query(models.Cargo).filter(models.Cargo.nombre == nombre_nuevo, models.Cargo.id != cargo_id).first():
+            raise HTTPException(status_code=400, detail="El cargo ya existe")
+        cargo.nombre = nombre_nuevo
+
+    if data.categoria is not None:
+        cargo.categoria = normalizar_categoria(data.categoria)
+    if data.especialidades is not None:
+        cargo.especialidades = texto_especialidades(data.especialidades)
+
+    db.commit()
+    db.refresh(cargo)
+    return {
+        "id": cargo.id,
+        "nombre": cargo.nombre,
+        "categoria": cargo.categoria,
+        "especialidades": lista_especialidades(cargo.especialidades),
+    }
 
 
 @router.delete("/usuarios/cargos/{cargo_id}")
@@ -131,8 +208,7 @@ def eliminar_cargo(cargo_id: int, db: Session = Depends(get_db)):
     nombre = normalizar_cargo(cargo.nombre)
     if nombre in CARGOS_BASE_PROTEGIDOS:
         raise HTTPException(status_code=400, detail="Los cargos base del sistema no se pueden eliminar")
-    usuarios = db.query(models.Usuario).all()
-    if any(nombre in roles_usuario(usuario.rol) for usuario in usuarios):
+    if cargo_en_uso(db, nombre):
         raise HTTPException(status_code=400, detail="No se puede eliminar un cargo asignado a empleados")
     db.delete(cargo)
     db.commit()
@@ -141,7 +217,13 @@ def eliminar_cargo(cargo_id: int, db: Session = Depends(get_db)):
 
 @router.get("/usuarios")
 def obtener_usuarios(db: Session = Depends(get_db)):
-    cargos = {normalizar_cargo(c.nombre): c.categoria for c in obtener_cargos(db)}
+    cargos = {
+        normalizar_cargo(c.nombre): {
+            "categoria": c.categoria or "ADMINISTRATIVO",
+            "especialidades": lista_especialidades(c.especialidades),
+        }
+        for c in obtener_cargos(db)
+    }
     usuarios = db.query(models.Usuario).order_by(models.Usuario.id.desc()).all()
     return [
         {
@@ -150,7 +232,11 @@ def obtener_usuarios(db: Session = Depends(get_db)):
             "username": u.username,
             "rol": u.rol,
             "roles": roles_usuario(u.rol),
-            "categorias": {rol: cargos.get(rol, "ADMINISTRATIVO") for rol in roles_usuario(u.rol)},
+            "categorias": {rol: cargos.get(rol, {}).get("categoria", "ADMINISTRATIVO") for rol in roles_usuario(u.rol)},
+            "especialidades": {
+                rol: cargos.get(rol, {}).get("especialidades", [])
+                for rol in roles_usuario(u.rol)
+            },
             "activo": u.activo or "SI",
         }
         for u in usuarios

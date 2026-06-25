@@ -260,6 +260,7 @@
                             <div class="window mt-3">
                                 <div class="window-head"><div><h2 class="window-title">Biblioteca de cargos</h2><p class="window-subtitle">Crea o elimina cargos disponibles para el equipo.</p></div></div>
                                 <form id="formCargo" class="window-body">
+                                    <input type="hidden" id="cargoEditandoId">
                                     <label class="form-label" for="nombreCargo">Nuevo cargo</label>
                                     <input class="form-control mb-2" id="nombreCargo" placeholder="Ej. Lider de taller" required>
                                     <label class="form-label" for="categoriaCargo">Tipo de acceso</label>
@@ -267,11 +268,21 @@
                                         <option value="ADMINISTRATIVO">Administrativo</option>
                                         <option value="TECNICO">Tecnico / operativo</option>
                                     </select>
-                                    <button class="btn btn-outline-primary w-100" type="submit">Crear cargo</button>
+                                    <label class="form-label">Compatibilidad operativa</label>
+                                    <div class="splitter mb-3">
+                                        <label class="form-check"><input class="form-check-input cargo-especialidad" type="checkbox" value="ESTACIONARIOS"> <span class="form-check-label">Estacionarios</span></label>
+                                        <label class="form-check"><input class="form-check-input cargo-especialidad" type="checkbox" value="PORTATILES"> <span class="form-check-label">Portatiles</span></label>
+                                        <label class="form-check"><input class="form-check-input cargo-especialidad" type="checkbox" value="TAMICES"> <span class="form-check-label">Tamices</span></label>
+                                        <label class="form-check"><input class="form-check-input cargo-especialidad" type="checkbox" value="COMPRESORES"> <span class="form-check-label">Compresores</span></label>
+                                    </div>
+                                    <div class="splitter">
+                                        <button class="btn btn-outline-primary" id="btnCargoSubmit" type="submit">Crear cargo</button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="limpiarCargoForm()">Limpiar cargo</button>
+                                    </div>
                                 </form>
                                 <div class="table-wrap" style="max-height: 260px;">
                                     <table class="table table-sm align-middle">
-                                        <thead><tr><th>Cargo</th><th>Tipo</th><th></th></tr></thead>
+                                        <thead><tr><th>Cargo</th><th>Tipo</th><th>Compatible con</th><th></th></tr></thead>
                                         <tbody id="tablaCargos"></tbody>
                                     </table>
                                 </div>
@@ -321,15 +332,15 @@
 
         const $ = (id) => document.getElementById(id);
         const CARGOS_BASE = [
-            { nombre: 'GERENTE GENERAL', categoria: 'ADMINISTRATIVO', protegido: true },
-            { nombre: 'COORDINADOR ADMINISTRATIVO', categoria: 'ADMINISTRATIVO', protegido: true },
-            { nombre: 'COORDINADOR COMERCIAL', categoria: 'ADMINISTRATIVO', protegido: true },
-            { nombre: 'CONTADOR', categoria: 'ADMINISTRATIVO', protegido: true },
-            { nombre: 'JURIDICO', categoria: 'ADMINISTRATIVO', protegido: true },
-            { nombre: 'TECNICO DE ESTACIONARIOS', categoria: 'TECNICO', protegido: true },
-            { nombre: 'TECNICO DE PORTATILES', categoria: 'TECNICO', protegido: true },
-            { nombre: 'TECNICO DE LLENA', categoria: 'TECNICO', protegido: true },
-            { nombre: 'TECNICO DE COMPRESORES', categoria: 'TECNICO', protegido: true },
+            { nombre: 'GERENTE GENERAL', categoria: 'ADMINISTRATIVO', especialidades: [], protegido: true },
+            { nombre: 'COORDINADOR ADMINISTRATIVO', categoria: 'ADMINISTRATIVO', especialidades: [], protegido: true },
+            { nombre: 'COORDINADOR COMERCIAL', categoria: 'ADMINISTRATIVO', especialidades: [], protegido: true },
+            { nombre: 'CONTADOR', categoria: 'ADMINISTRATIVO', especialidades: [], protegido: true },
+            { nombre: 'JURIDICO', categoria: 'ADMINISTRATIVO', especialidades: [], protegido: true },
+            { nombre: 'TECNICO DE ESTACIONARIOS', categoria: 'TECNICO', especialidades: ['ESTACIONARIOS'], protegido: true },
+            { nombre: 'TECNICO DE PORTATILES', categoria: 'TECNICO', especialidades: ['PORTATILES'], protegido: true },
+            { nombre: 'TECNICO DE LLENA', categoria: 'TECNICO', especialidades: ['TAMICES'], protegido: true },
+            { nombre: 'TECNICO DE COMPRESORES', categoria: 'TECNICO', especialidades: ['COMPRESORES'], protegido: true },
         ];
 
         function limpiarTexto(valor) {
@@ -363,7 +374,12 @@
             const mapa = new Map();
             [...CARGOS_BASE, ...cargosGlobales].forEach(cargo => {
                 const nombre = normalizarTexto(cargo.nombre);
-                if (nombre) mapa.set(nombre, { ...cargo, nombre, categoria: normalizarTexto(cargo.categoria || 'ADMINISTRATIVO') });
+                if (nombre) mapa.set(nombre, {
+                    ...cargo,
+                    nombre,
+                    categoria: normalizarTexto(cargo.categoria || 'ADMINISTRATIVO'),
+                    especialidades: Array.isArray(cargo.especialidades) ? cargo.especialidades.map(normalizarTexto).filter(Boolean) : rolesDesde(cargo.especialidades),
+                });
             });
             return [...mapa.values()].sort((a, b) => {
                 const ordenA = a.categoria === 'ADMINISTRATIVO' ? 0 : 1;
@@ -406,6 +422,16 @@
             return normalizarTexto(categoria) === 'TECNICO' ? 'Tecnico / operativo' : 'Administrativo';
         }
 
+        function etiquetaEspecialidad(especialidad) {
+            const etiquetas = {
+                ESTACIONARIOS: 'Estacionarios',
+                PORTATILES: 'Portatiles',
+                TAMICES: 'Tamices',
+                COMPRESORES: 'Compresores',
+            };
+            return etiquetas[normalizarTexto(especialidad)] || especialidad;
+        }
+
         function actualizarContadorCargos() {
             const total = $('rolUsuario') ? $('rolUsuario').selectedOptions.length : 0;
             if ($('contadorCargosUsuario')) $('contadorCargosUsuario').textContent = `${total}/2 cargos`;
@@ -433,13 +459,15 @@
             $('tablaCargos').innerHTML = cargosDisponibles().map(cargo => {
                 const nombre = normalizarTexto(cargo.nombre);
                 const enUso = usados.has(nombre);
-                const accion = cargo.protegido
-                    ? '<span class="pill pill-muted">Base</span>'
-                    : enUso
-                        ? '<span class="pill pill-amber">En uso</span>'
-                        : `<button class="btn btn-sm btn-outline-danger" type="button" onclick="eliminarCargo(${cargo.id})">Eliminar</button>`;
-                return `<tr><td class="text-start"><strong>${limpiarTexto(cargo.nombre)}</strong></td><td><span class="pill ${normalizarTexto(cargo.categoria) === 'TECNICO' ? 'pill-green' : 'pill-blue'}">${limpiarTexto(etiquetaCategoria(cargo.categoria))}</span></td><td class="text-end">${accion}</td></tr>`;
-            }).join('') || `<tr><td colspan="3" class="empty-state">No hay cargos creados.</td></tr>`;
+                const acciones = [`<button class="btn btn-sm btn-outline-primary" type="button" onclick="editarCargo(${cargo.id})">Editar</button>`];
+                if (cargo.protegido) acciones.push('<span class="pill pill-muted">Base</span>');
+                else if (enUso) acciones.push('<span class="pill pill-amber">En uso</span>');
+                else acciones.push(`<button class="btn btn-sm btn-outline-danger" type="button" onclick="eliminarCargo(${cargo.id})">Eliminar</button>`);
+                const compatibilidad = (cargo.especialidades || []).length
+                    ? cargo.especialidades.map(item => `<span class="pill pill-green">${limpiarTexto(etiquetaEspecialidad(item))}</span>`).join(' ')
+                    : '<span class="pill pill-muted">Sin especialidad</span>';
+                return `<tr><td class="text-start"><strong>${limpiarTexto(cargo.nombre)}</strong></td><td><span class="pill ${normalizarTexto(cargo.categoria) === 'TECNICO' ? 'pill-green' : 'pill-blue'}">${limpiarTexto(etiquetaCategoria(cargo.categoria))}</span></td><td class="text-start">${compatibilidad}</td><td class="text-end"><div class="inline-actions justify-content-end">${acciones.join('')}</div></td></tr>`;
+            }).join('') || `<tr><td colspan="4" class="empty-state">No hay cargos creados.</td></tr>`;
         }
 
         function esOrdenTamices() {
@@ -734,6 +762,25 @@
             cargarTablas();
         }
 
+        function limpiarCargoForm() {
+            $('cargoEditandoId').value = '';
+            $('formCargo').reset();
+            document.querySelectorAll('.cargo-especialidad').forEach(item => item.checked = false);
+            $('btnCargoSubmit').textContent = 'Crear cargo';
+        }
+
+        function editarCargo(id) {
+            const cargo = cargosDisponibles().find(item => Number(item.id) === Number(id));
+            if (!cargo) return;
+            $('cargoEditandoId').value = cargo.id;
+            $('nombreCargo').value = cargo.nombre;
+            $('categoriaCargo').value = normalizarTexto(cargo.categoria) === 'TECNICO' ? 'TECNICO' : 'ADMINISTRATIVO';
+            const especialidades = new Set(cargo.especialidades || []);
+            document.querySelectorAll('.cargo-especialidad').forEach(item => item.checked = especialidades.has(normalizarTexto(item.value)));
+            $('btnCargoSubmit').textContent = 'Actualizar cargo';
+            $('nombreCargo').focus();
+        }
+
         async function cambiarEstadoUsuario(id, activo) {
             await fetch(`/usuarios/${id}/estado?activo=${activo}`, { method: 'POST' });
             cargarTablas();
@@ -801,16 +848,18 @@
 
         $('formCargo').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const res = await fetch('/usuarios/cargos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+            const id = $('cargoEditandoId').value;
+            const res = await fetch(id ? `/usuarios/cargos/${id}` : '/usuarios/cargos', { method: id ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
                 nombre: $('nombreCargo').value,
-                categoria: $('categoriaCargo').value
+                categoria: $('categoriaCargo').value,
+                especialidades: [...document.querySelectorAll('.cargo-especialidad:checked')].map(item => item.value)
             }) });
             if (!res.ok) {
                 const error = await res.json().catch(() => ({}));
                 alert(error.detail || 'No fue posible crear el cargo.');
                 return;
             }
-            e.target.reset();
+            limpiarCargoForm();
             cargarTablas();
         });
 

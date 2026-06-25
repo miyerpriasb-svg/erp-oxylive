@@ -2,15 +2,15 @@ from sqlalchemy import inspect, text
 import database
 
 DEFAULT_CARGOS = [
-    ("GERENTE GENERAL", "ADMINISTRATIVO"),
-    ("COORDINADOR ADMINISTRATIVO", "ADMINISTRATIVO"),
-    ("COORDINADOR COMERCIAL", "ADMINISTRATIVO"),
-    ("CONTADOR", "ADMINISTRATIVO"),
-    ("JURIDICO", "ADMINISTRATIVO"),
-    ("TECNICO DE ESTACIONARIOS", "TECNICO"),
-    ("TECNICO DE PORTATILES", "TECNICO"),
-    ("TECNICO DE LLENA", "TECNICO"),
-    ("TECNICO DE COMPRESORES", "TECNICO"),
+    ("GERENTE GENERAL", "ADMINISTRATIVO", ""),
+    ("COORDINADOR ADMINISTRATIVO", "ADMINISTRATIVO", ""),
+    ("COORDINADOR COMERCIAL", "ADMINISTRATIVO", ""),
+    ("CONTADOR", "ADMINISTRATIVO", ""),
+    ("JURIDICO", "ADMINISTRATIVO", ""),
+    ("TECNICO DE ESTACIONARIOS", "TECNICO", "ESTACIONARIOS"),
+    ("TECNICO DE PORTATILES", "TECNICO", "PORTATILES"),
+    ("TECNICO DE LLENA", "TECNICO", "TAMICES"),
+    ("TECNICO DE COMPRESORES", "TECNICO", "COMPRESORES"),
 ]
 
 
@@ -49,15 +49,27 @@ def ensure_schema():
             CREATE TABLE IF NOT EXISTS cargos (
                 id SERIAL PRIMARY KEY,
                 nombre VARCHAR UNIQUE,
-                categoria VARCHAR DEFAULT 'ADMINISTRATIVO'
+                categoria VARCHAR DEFAULT 'ADMINISTRATIVO',
+                especialidades VARCHAR DEFAULT ''
             )
         """))
-        for nombre, categoria in DEFAULT_CARGOS:
+        ensure_column(connection, "cargos", "especialidades", "VARCHAR")
+        for nombre, categoria, especialidades in DEFAULT_CARGOS:
             connection.execute(
                 text("""
-                    INSERT INTO cargos (nombre, categoria)
-                    VALUES (:nombre, :categoria)
+                    INSERT INTO cargos (nombre, categoria, especialidades)
+                    VALUES (:nombre, :categoria, :especialidades)
                     ON CONFLICT (nombre) DO NOTHING
                 """),
-                {"nombre": nombre, "categoria": categoria},
+                {"nombre": nombre, "categoria": categoria, "especialidades": especialidades},
+            )
+            connection.execute(
+                text("""
+                    UPDATE cargos
+                    SET categoria = :categoria,
+                        especialidades = :especialidades
+                    WHERE nombre = :nombre
+                    AND (especialidades IS NULL OR especialidades = '')
+                """),
+                {"nombre": nombre, "categoria": categoria, "especialidades": especialidades},
             )

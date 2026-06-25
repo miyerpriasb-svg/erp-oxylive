@@ -27,21 +27,42 @@ def roles_usuario(rol: str):
     return [r.strip().upper() for r in (rol or "").split(",") if r.strip()]
 
 
+ESPECIALIDADES_POR_CARGO = {
+    "TECNICO DE ESTACIONARIOS": ["ESTACIONARIOS"],
+    "TECNICO DE PORTATILES": ["PORTATILES"],
+    "TECNICO DE LLENA": ["TAMICES"],
+    "TECNICO DE COMPRESORES": ["COMPRESORES"],
+}
+
+
+def especialidades_cargo(db: Session, cargo_nombre: str):
+    cargo_normalizado = (cargo_nombre or "").strip().upper()
+    cargo = db.query(models.Cargo).filter(models.Cargo.nombre == cargo_normalizado).first()
+    if cargo:
+        return [item.strip().upper() for item in (cargo.especialidades or "").split(",") if item.strip()]
+    return ESPECIALIDADES_POR_CARGO.get(cargo_normalizado, [])
+
+
+def usuario_tiene_especialidad(db: Session, usuario: models.Usuario, especialidad: str):
+    requerida = (especialidad or "").strip().upper()
+    return any(requerida in especialidades_cargo(db, rol) for rol in roles_usuario(usuario.rol))
+
+
 def normalizar_estado(valor: str):
     return (valor or "").upper().replace("Ã“", "O").replace("Ãƒâ€œ", "O")
 
 
-def buscar_tecnico_especialista(db: Session, rol_requerido: str, tecnico_id: Optional[int] = None):
+def buscar_tecnico_especialista(db: Session, especialidad_requerida: str, tecnico_id: Optional[int] = None):
     if tecnico_id:
         tecnico = db.query(models.Usuario).filter(models.Usuario.id == tecnico_id).first()
-        if not tecnico or (tecnico.activo or "SI").upper() == "NO" or rol_requerido not in roles_usuario(tecnico.rol):
-            raise HTTPException(status_code=400, detail=f"La sub-ODS debe asignarse a un usuario con cargo {rol_requerido}")
+        if not tecnico or (tecnico.activo or "SI").upper() == "NO" or not usuario_tiene_especialidad(db, tecnico, especialidad_requerida):
+            raise HTTPException(status_code=400, detail=f"La sub-ODS debe asignarse a un usuario compatible con {especialidad_requerida}")
         return tecnico
 
     for tecnico in db.query(models.Usuario).all():
-        if (tecnico.activo or "SI").upper() != "NO" and rol_requerido in roles_usuario(tecnico.rol):
+        if (tecnico.activo or "SI").upper() != "NO" and usuario_tiene_especialidad(db, tecnico, especialidad_requerida):
             return tecnico
-    raise HTTPException(status_code=400, detail=f"No hay tecnicos activos con cargo {rol_requerido}")
+    raise HTTPException(status_code=400, detail=f"No hay tecnicos activos compatibles con {especialidad_requerida}")
 
 
 class TamizOrdenData(BaseModel):
@@ -201,8 +222,8 @@ def crear_sub_ods(ods_id: int, sub: SubProcesoNuevo, db: Session = Depends(get_d
     tipo_normalizado = (sub.tipo_sub_ods or "").upper()
     es_tamiz = "TAMIZ" in tipo_normalizado or "LLENADO" in tipo_normalizado or "RECARGA" in tipo_normalizado
     es_compresor = "COMPRESOR" in tipo_normalizado
-    rol_destino = "TECNICO DE LLENA" if es_tamiz else ("TECNICO DE COMPRESORES" if es_compresor else "")
-    tecnico_destino = buscar_tecnico_especialista(db, rol_destino, sub.id_trabajador_asignado) if rol_destino else None
+    especialidad_destino = "TAMICES" if es_tamiz else ("COMPRESORES" if es_compresor else "")
+    tecnico_destino = buscar_tecnico_especialista(db, especialidad_destino, sub.id_trabajador_asignado) if especialidad_destino else None
     nuevo = models.Proceso(
         ods=parent.ods,
         tipo_tarea=sub.tipo_tarea,
