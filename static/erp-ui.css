@@ -699,13 +699,14 @@ body::before {
 .login-visual {
     position: relative;
     display: flex;
-    align-items: end;
+    align-items: center;
+    justify-content: center;
     padding: clamp(1.5rem, 4vw, 3.7rem);
     color: #ffffff;
     background:
-        linear-gradient(90deg, rgba(18, 63, 113, 0.88), rgba(39, 136, 120, 0.56)),
-        url("assets/login-hero.png"),
-        linear-gradient(135deg, #123f71, #1f6fa8 56%, #278878),
+        radial-gradient(circle at 62% 34%, rgba(79, 194, 62, 0.28), transparent 36%),
+        linear-gradient(90deg, rgba(18, 63, 113, 0.86), rgba(39, 136, 120, 0.5)),
+        linear-gradient(135deg, #123f71, #1f6fa8 52%, #278878),
         #123f71;
     background-size: cover;
     background-position: center;
@@ -713,7 +714,7 @@ body::before {
 }
 
 .login-visual::before {
-    content: "";
+    content: none;
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -725,7 +726,7 @@ body::before {
 }
 
 .login-visual::after {
-    content: "ODS  INVENTARIO  CLIENTES  PERSONAL";
+    content: none;
     position: absolute;
     right: clamp(1rem, 5vw, 4rem);
     top: clamp(1rem, 6vw, 5rem);
@@ -749,14 +750,14 @@ body::before {
 .login-logo-watermark {
     position: absolute;
     z-index: 0;
-    width: min(72%, 760px);
-    max-height: 78%;
+    width: min(82%, 900px);
+    max-height: 86%;
     left: 50%;
-    top: 46%;
+    top: 50%;
     object-fit: contain;
-    opacity: 0.16;
-    filter: blur(2px) saturate(0.9);
-    transform: translate(-50%, -50%) scale(1.08);
+    opacity: 0.72;
+    filter: saturate(1.05) drop-shadow(0 28px 46px rgba(5, 18, 34, 0.25));
+    transform: translate(-50%, -50%) scale(1.02);
     pointer-events: none;
 }
 

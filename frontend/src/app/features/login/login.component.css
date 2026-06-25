@@ -132,37 +132,26 @@ input.invalid { border-color: #b93535; }
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  background: url('/assets/login-hero.png') center/cover no-repeat;
+  background: linear-gradient(135deg, #123f71, #1f6fa8 52%, #278878);
   color: white;
 }
-.visual-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(18, 63, 113, .93), rgba(39, 136, 120, .52)); }
-.visual-logo-watermark { position: absolute; z-index: 1; width: min(72%, 760px); max-height: 78%; left: 50%; top: 46%; object-fit: contain; opacity: .17; filter: blur(2px) saturate(.9); transform: translate(-50%, -50%) scale(1.08); pointer-events: none; }
-.visual-content {
-  z-index: 2;
+.visual-overlay {
   position: absolute;
-  left: clamp(36px, 6vw, 92px);
-  right: clamp(30px, 5vw, 72px);
-  bottom: clamp(50px, 10vh, 112px);
-  max-width: 680px;
+  inset: 0;
+  background:
+    radial-gradient(circle at 62% 34%, rgba(79, 194, 62, .28), transparent 36%),
+    linear-gradient(90deg, rgba(18, 63, 113, .86), rgba(39, 136, 120, .5));
 }
-.visual-content .eyebrow { color: #b9efb1; }
-.visual-content h2 { margin: 0; max-width: 650px; font-size: clamp(38px, 5vw, 66px); line-height: 1.03; }
-.visual-content > p:not(.eyebrow) { max-width: 560px; margin: 22px 0 0; color: rgba(255,255,255,.78); line-height: 1.65; }
-.visual-status { display: flex; flex-wrap: wrap; gap: 0; margin-top: 34px; border-top: 1px solid rgba(255,255,255,.28); }
-.visual-status span { padding: 14px 26px 0 0; margin-right: 26px; color: #d7eeee; font-size: 12px; font-weight: 700; text-transform: uppercase; }
-
+.visual-logo-watermark { position: absolute; z-index: 1; width: min(82%, 900px); max-height: 86%; left: 50%; top: 50%; object-fit: contain; opacity: .72; filter: saturate(1.05) drop-shadow(0 28px 46px rgba(5, 18, 34, .25)); transform: translate(-50%, -50%) scale(1.02); pointer-events: none; }
 @media (max-width: 900px) {
   .login-shell { grid-template-columns: 1fr; }
   .login-workspace { min-height: 72vh; padding: 32px 24px 48px; }
   .brand { margin-bottom: 44px; }
   .login-visual { min-height: 38vh; }
-  .visual-content { position: relative; left: auto; right: auto; bottom: auto; padding: 50px 24px; }
-  .visual-content h2 { font-size: 34px; }
 }
 
 @media (max-width: 520px) {
   .login-workspace { place-items: start stretch; }
   h1 { font-size: 36px; }
   .login-visual { min-height: 42vh; }
-  .visual-status span { margin-right: 14px; padding-right: 14px; }
 }
