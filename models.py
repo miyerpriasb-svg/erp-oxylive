@@ -10,6 +10,12 @@ class Usuario(Base):
     rol = Column(String)
     activo = Column(String, default="SI")
 
+class Cargo(Base):
+    __tablename__ = "cargos"
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, unique=True, index=True)
+    categoria = Column(String, default="ADMINISTRATIVO")
+
 class Cliente(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)

@@ -224,7 +224,8 @@
         }
 
         function rolEsTecnico(valor) {
-            return rolesDesde(valor).some(rol => ROLES_TECNICOS.includes(rol));
+            const categorias = valor && typeof valor === 'object' && valor.categorias ? Object.values(valor.categorias).map(normalizarTexto) : [];
+            return categorias.includes('TECNICO') || rolesDesde(valor).some(rol => ROLES_TECNICOS.includes(rol));
         }
 
         function usuarioTieneCargo(usuario, cargo) {

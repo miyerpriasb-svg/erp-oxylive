@@ -233,23 +233,49 @@
 
                 <section class="tab-pane fade" id="equipo" role="tabpanel">
                     <div class="workspace-grid mt-3">
-                        <div class="window">
-                            <div class="window-head"><div><h2 class="window-title">Panel administrador</h2><p class="window-subtitle">Crear y modificar usuarios del ERP.</p></div></div>
-                            <form id="formUsuario" class="window-body">
-                                <input type="hidden" id="usuarioEditandoId">
-                                <label class="form-label" for="nombreUsuario">Nombre completo</label>
-                                <input class="form-control mb-2" id="nombreUsuario" required>
-                                <label class="form-label" for="loginUsuario">Usuario</label>
-                                <input class="form-control mb-2" id="loginUsuario" required>
-                                <label class="form-label" for="passwordUsuario">Contrasena</label>
-                                <input class="form-control mb-2" id="passwordUsuario" type="password" required>
-                                <label class="form-label" for="rolUsuario">Cargos asignados</label>
-                                <select class="form-select mb-3" id="rolUsuario" multiple size="9"><option value="GERENTE GENERAL">Gerente general</option><option value="COORDINADOR ADMINISTRATIVO">Coordinador administrativo</option><option value="COORDINADOR COMERCIAL">Coordinador comercial</option><option value="CONTADOR">Contador</option><option value="JURIDICO">Juridico</option><option value="TECNICO DE ESTACIONARIOS">Tecnico de estacionarios</option><option value="TECNICO DE PORTATILES">Tecnico de portatiles</option><option value="TECNICO DE LLENA">Tecnico de llena</option><option value="TECNICO DE COMPRESORES">Tecnico de compresores</option></select>
-                                <div class="splitter">
-                                    <button class="btn btn-primary" id="btnUsuarioSubmit" type="submit">Guardar usuario</button>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="limpiarUsuarioForm()">Limpiar</button>
+                        <div>
+                            <div class="window">
+                                <div class="window-head"><div><h2 class="window-title">Panel administrador</h2><p class="window-subtitle">Crear y modificar usuarios del ERP.</p></div></div>
+                                <form id="formUsuario" class="window-body">
+                                    <input type="hidden" id="usuarioEditandoId">
+                                    <label class="form-label" for="nombreUsuario">Nombre completo</label>
+                                    <input class="form-control mb-2" id="nombreUsuario" required>
+                                    <label class="form-label" for="loginUsuario">Usuario</label>
+                                    <input class="form-control mb-2" id="loginUsuario" required>
+                                    <label class="form-label" for="passwordUsuario">Contrasena</label>
+                                    <input class="form-control mb-2" id="passwordUsuario" type="password" required>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <label class="form-label mb-1" for="rolUsuario">Cargos asignados</label>
+                                        <span class="pill pill-blue" id="contadorCargosUsuario">0/2 cargos</span>
+                                    </div>
+                                    <select class="form-select mb-2" id="rolUsuario" multiple size="8"></select>
+                                    <p class="text-muted small mb-3">Cada empleado puede tener uno o dos cargos. Usa Ctrl para seleccionar dos.</p>
+                                    <div class="splitter">
+                                        <button class="btn btn-primary" id="btnUsuarioSubmit" type="submit">Guardar usuario</button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="limpiarUsuarioForm()">Limpiar</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="window mt-3">
+                                <div class="window-head"><div><h2 class="window-title">Biblioteca de cargos</h2><p class="window-subtitle">Crea o elimina cargos disponibles para el equipo.</p></div></div>
+                                <form id="formCargo" class="window-body">
+                                    <label class="form-label" for="nombreCargo">Nuevo cargo</label>
+                                    <input class="form-control mb-2" id="nombreCargo" placeholder="Ej. Lider de taller" required>
+                                    <label class="form-label" for="categoriaCargo">Tipo de acceso</label>
+                                    <select class="form-select mb-3" id="categoriaCargo" required>
+                                        <option value="ADMINISTRATIVO">Administrativo</option>
+                                        <option value="TECNICO">Tecnico / operativo</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary w-100" type="submit">Crear cargo</button>
+                                </form>
+                                <div class="table-wrap" style="max-height: 260px;">
+                                    <table class="table table-sm align-middle">
+                                        <thead><tr><th>Cargo</th><th>Tipo</th><th></th></tr></thead>
+                                        <tbody id="tablaCargos"></tbody>
+                                    </table>
                                 </div>
-                            </form>
+                            </div>
                         </div>
 
                         <div class="window">
@@ -289,10 +315,22 @@
         let clientesCRM = [];
         let inventarioGlobal = [];
         let usuariosGlobales = [];
+        let cargosGlobales = [];
         let sesionActual = null;
         let estadoFiltroActivo = null;
 
         const $ = (id) => document.getElementById(id);
+        const CARGOS_BASE = [
+            { nombre: 'GERENTE GENERAL', categoria: 'ADMINISTRATIVO', protegido: true },
+            { nombre: 'COORDINADOR ADMINISTRATIVO', categoria: 'ADMINISTRATIVO', protegido: true },
+            { nombre: 'COORDINADOR COMERCIAL', categoria: 'ADMINISTRATIVO', protegido: true },
+            { nombre: 'CONTADOR', categoria: 'ADMINISTRATIVO', protegido: true },
+            { nombre: 'JURIDICO', categoria: 'ADMINISTRATIVO', protegido: true },
+            { nombre: 'TECNICO DE ESTACIONARIOS', categoria: 'TECNICO', protegido: true },
+            { nombre: 'TECNICO DE PORTATILES', categoria: 'TECNICO', protegido: true },
+            { nombre: 'TECNICO DE LLENA', categoria: 'TECNICO', protegido: true },
+            { nombre: 'TECNICO DE COMPRESORES', categoria: 'TECNICO', protegido: true },
+        ];
 
         function limpiarTexto(valor) {
             return String(valor ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -304,9 +342,6 @@
                 .replace(/Ãƒ.|Ã‚./g, '')
                 .toUpperCase();
         }
-
-        const ROLES_TECNICOS = ['TECNICO DE ESTACIONARIOS', 'TECNICO DE PORTATILES', 'TECNICO DE LLENA', 'TECNICO DE COMPRESORES'];
-        const ROLES_ADMIN = ['GERENTE GENERAL', 'COORDINADOR ADMINISTRATIVO', 'COORDINADOR COMERCIAL', 'CONTADOR', 'JURIDICO'];
 
         function rolesDesde(valor) {
             if (Array.isArray(valor)) return valor.map(r => normalizarTexto(r)).filter(Boolean);
@@ -324,12 +359,39 @@
             return rolesVisibles(valor).join(', ');
         }
 
+        function cargosDisponibles() {
+            const mapa = new Map();
+            [...CARGOS_BASE, ...cargosGlobales].forEach(cargo => {
+                const nombre = normalizarTexto(cargo.nombre);
+                if (nombre) mapa.set(nombre, { ...cargo, nombre, categoria: normalizarTexto(cargo.categoria || 'ADMINISTRATIVO') });
+            });
+            return [...mapa.values()].sort((a, b) => {
+                const ordenA = a.categoria === 'ADMINISTRATIVO' ? 0 : 1;
+                const ordenB = b.categoria === 'ADMINISTRATIVO' ? 0 : 1;
+                return ordenA - ordenB || a.nombre.localeCompare(b.nombre);
+            });
+        }
+
+        function categoriaCargo(nombre, contexto = null) {
+            const cargo = normalizarTexto(nombre);
+            if (contexto && typeof contexto === 'object' && contexto.categorias) {
+                const match = Object.entries(contexto.categorias).find(([rol]) => normalizarTexto(rol) === cargo);
+                if (match) return normalizarTexto(match[1]);
+            }
+            return normalizarTexto(cargosDisponibles().find(item => normalizarTexto(item.nombre) === cargo)?.categoria || '');
+        }
+
+        function tieneCategoria(valor, categoria) {
+            const buscada = normalizarTexto(categoria);
+            return rolesDesde(valor).some(rol => categoriaCargo(rol, valor) === buscada);
+        }
+
         function rolEsTecnico(valor) {
-            return rolesDesde(valor).some(rol => ROLES_TECNICOS.includes(rol));
+            return tieneCategoria(valor, 'TECNICO');
         }
 
         function rolEsAdministrativo(valor) {
-            return rolesDesde(valor).some(rol => ROLES_ADMIN.includes(rol));
+            return tieneCategoria(valor, 'ADMINISTRATIVO');
         }
 
         function puedeGestionarEquipo(valor) {
@@ -338,6 +400,46 @@
 
         function puedeAprobarOds(valor) {
             return rolesDesde(valor).some(rol => ['GERENTE GENERAL', 'COORDINADOR ADMINISTRATIVO'].includes(rol));
+        }
+
+        function etiquetaCategoria(categoria) {
+            return normalizarTexto(categoria) === 'TECNICO' ? 'Tecnico / operativo' : 'Administrativo';
+        }
+
+        function actualizarContadorCargos() {
+            const total = $('rolUsuario') ? $('rolUsuario').selectedOptions.length : 0;
+            if ($('contadorCargosUsuario')) $('contadorCargosUsuario').textContent = `${total}/2 cargos`;
+        }
+
+        function validarSeleccionCargos() {
+            const seleccionados = [...$('rolUsuario').selectedOptions];
+            if (seleccionados.length > 2) {
+                seleccionados.slice(2).forEach(option => option.selected = false);
+                alert('Un empleado solo puede tener uno o dos cargos.');
+            }
+            actualizarContadorCargos();
+        }
+
+        function renderSelectorCargos(seleccion = rolesDesde($('rolUsuario')?.value || '')) {
+            if (!$('rolUsuario')) return;
+            const seleccionados = new Set((Array.isArray(seleccion) ? seleccion : rolesDesde(seleccion)).map(normalizarTexto));
+            $('rolUsuario').innerHTML = cargosDisponibles().map(cargo => `<option value="${limpiarTexto(cargo.nombre)}" ${seleccionados.has(normalizarTexto(cargo.nombre)) ? 'selected' : ''}>${limpiarTexto(cargo.nombre)} - ${limpiarTexto(etiquetaCategoria(cargo.categoria))}</option>`).join('');
+            validarSeleccionCargos();
+        }
+
+        function renderCargos() {
+            if (!$('tablaCargos')) return;
+            const usados = new Set(usuariosGlobales.flatMap(usuario => rolesDesde(usuario)));
+            $('tablaCargos').innerHTML = cargosDisponibles().map(cargo => {
+                const nombre = normalizarTexto(cargo.nombre);
+                const enUso = usados.has(nombre);
+                const accion = cargo.protegido
+                    ? '<span class="pill pill-muted">Base</span>'
+                    : enUso
+                        ? '<span class="pill pill-amber">En uso</span>'
+                        : `<button class="btn btn-sm btn-outline-danger" type="button" onclick="eliminarCargo(${cargo.id})">Eliminar</button>`;
+                return `<tr><td class="text-start"><strong>${limpiarTexto(cargo.nombre)}</strong></td><td><span class="pill ${normalizarTexto(cargo.categoria) === 'TECNICO' ? 'pill-green' : 'pill-blue'}">${limpiarTexto(etiquetaCategoria(cargo.categoria))}</span></td><td class="text-end">${accion}</td></tr>`;
+            }).join('') || `<tr><td colspan="3" class="empty-state">No hay cargos creados.</td></tr>`;
         }
 
         function esOrdenTamices() {
@@ -405,20 +507,23 @@
 
         async function cargarTablas() {
             try {
-                const [resProc, resInv, resCli, resUsu, resIng, resMov, resMan, resCrm] = await Promise.all([
+                const [resProc, resInv, resCli, resUsu, resIng, resMov, resMan, resCrm, resCargos] = await Promise.all([
                     fetch('/procesos'), fetch('/inventario'), fetch('/clientes/'), fetch('/usuarios'),
-                    fetch('/inventario/ingresos'), fetch('/inventario/movimientos'), fetch('/inventario/salidas-manuales'), fetch('/clientes/crm/resumen')
+                    fetch('/inventario/ingresos'), fetch('/inventario/movimientos'), fetch('/inventario/salidas-manuales'), fetch('/clientes/crm/resumen'),
+                    fetch('/usuarios/cargos')
                 ]);
 
                 procesosGlobales = await resProc.json();
                 inventarioGlobal = await resInv.json();
                 const clientes = await resCli.json();
                 usuariosGlobales = await resUsu.json();
+                cargosGlobales = await resCargos.json();
                 const ingresos = await resIng.json();
                 const movimientos = await resMov.json();
                 const manuales = await resMan.json();
                 const crm = await resCrm.json();
                 clientesCRM = crm.clientes || clientes;
+                renderSelectorCargos();
 
                 $('selectCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)} - ${limpiarTexto(c.nit)}</option>`).join('');
                 $('interaccionCliente').innerHTML = clientes.map(c => `<option value="${c.id}">${limpiarTexto(c.razon_social)}</option>`).join('');
@@ -436,6 +541,7 @@
                 renderInventario();
                 renderClientesCRM(crm);
                 renderUsuarios();
+                renderCargos();
             } catch (error) {
                 console.error(error);
             }
@@ -598,7 +704,7 @@
         function limpiarUsuarioForm() {
             $('usuarioEditandoId').value = '';
             $('formUsuario').reset();
-            [...$('rolUsuario').options].forEach(option => option.selected = false);
+            renderSelectorCargos([]);
             $('passwordUsuario').required = true;
             $('btnUsuarioSubmit').textContent = 'Guardar usuario';
         }
@@ -612,8 +718,20 @@
             $('passwordUsuario').value = '';
             $('passwordUsuario').required = false;
             const roles = rolesDesde(usuario);
-            [...$('rolUsuario').options].forEach(option => option.selected = roles.includes(normalizarTexto(option.value)));
+            renderSelectorCargos(roles);
             $('btnUsuarioSubmit').textContent = 'Actualizar usuario';
+        }
+
+        async function eliminarCargo(id) {
+            const nombre = cargosDisponibles().find(cargo => Number(cargo.id) === Number(id))?.nombre || 'este cargo';
+            if (!confirm(`Deseas eliminar el cargo ${nombre}?`)) return;
+            const res = await fetch(`/usuarios/cargos/${id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                alert(error.detail || 'No fue posible eliminar el cargo.');
+                return;
+            }
+            cargarTablas();
         }
 
         async function cambiarEstadoUsuario(id, activo) {
@@ -666,14 +784,37 @@
             const id = $('usuarioEditandoId').value;
             const roles = [...$('rolUsuario').selectedOptions].map(option => option.value);
             if (!roles.length) { alert('Selecciona al menos un cargo.'); return; }
+            if (roles.length > 2) { alert('Un empleado solo puede tener uno o dos cargos.'); return; }
             const payload = { nombre: $('nombreUsuario').value, username: $('loginUsuario').value, rol: roles, activo: 'SI' };
             if ($('passwordUsuario').value) payload.password = $('passwordUsuario').value;
             const url = id ? `/usuarios/${id}` : '/usuarios';
             const method = id ? 'PUT' : 'POST';
-            await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(id ? payload : { ...payload, password: $('passwordUsuario').value }) });
+            const res = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(id ? payload : { ...payload, password: $('passwordUsuario').value }) });
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                alert(error.detail || 'No fue posible guardar el usuario.');
+                return;
+            }
             limpiarUsuarioForm();
             cargarTablas();
         });
+
+        $('formCargo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch('/usuarios/cargos', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+                nombre: $('nombreCargo').value,
+                categoria: $('categoriaCargo').value
+            }) });
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                alert(error.detail || 'No fue posible crear el cargo.');
+                return;
+            }
+            e.target.reset();
+            cargarTablas();
+        });
+
+        $('rolUsuario').addEventListener('change', validarSeleccionCargos);
 
         $('formItem').addEventListener('submit', async (e) => {
             e.preventDefault();

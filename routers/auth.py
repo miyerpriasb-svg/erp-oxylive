@@ -12,20 +12,17 @@ FALLBACK_USERS = {
     "administrador": {"id": 0, "nombre": "Gerente General Oxylive", "rol": "GERENTE GENERAL"},
 }
 
-ROLES_ADMIN = {
-    "GERENTE GENERAL",
-    "COORDINADOR ADMINISTRATIVO",
-    "COORDINADOR COMERCIAL",
-    "CONTADOR",
-    "JURIDICO",
+DEFAULT_CARGOS = {
+    "GERENTE GENERAL": "ADMINISTRATIVO",
+    "COORDINADOR ADMINISTRATIVO": "ADMINISTRATIVO",
+    "COORDINADOR COMERCIAL": "ADMINISTRATIVO",
+    "CONTADOR": "ADMINISTRATIVO",
+    "JURIDICO": "ADMINISTRATIVO",
+    "TECNICO DE ESTACIONARIOS": "TECNICO",
+    "TECNICO DE PORTATILES": "TECNICO",
+    "TECNICO DE LLENA": "TECNICO",
+    "TECNICO DE COMPRESORES": "TECNICO",
 }
-ROLES_TECNICOS = {
-    "TECNICO DE ESTACIONARIOS",
-    "TECNICO DE PORTATILES",
-    "TECNICO DE LLENA",
-    "TECNICO DE COMPRESORES",
-}
-ROLES_PERMITIDOS = ROLES_ADMIN | ROLES_TECNICOS
 
 
 class LoginData(BaseModel):
@@ -37,19 +34,36 @@ def roles_usuario(rol: str):
     return [r.strip().upper() for r in (rol or "").split(",") if r.strip()]
 
 
-def validar_roles(rol: str):
+def mapa_cargos(db: Session):
+    cargos = DEFAULT_CARGOS.copy()
+    try:
+        for cargo in db.query(models.Cargo).all():
+            cargos[(cargo.nombre or "").strip().upper()] = (cargo.categoria or "ADMINISTRATIVO").strip().upper()
+    except Exception:
+        pass
+    return cargos
+
+
+def validar_roles(rol: str, db: Session):
     roles = roles_usuario(rol)
-    if not roles or any(r not in ROLES_PERMITIDOS for r in roles):
-        raise HTTPException(status_code=403, detail="Rol no habilitado")
+    cargos = mapa_cargos(db)
+    if not roles or any(r not in cargos for r in roles):
+        raise HTTPException(status_code=403, detail="Cargo no habilitado")
     return roles
 
 
-def destino_por_roles(roles) -> str:
-    if any(r in ROLES_ADMIN for r in roles):
+def categorias_por_roles(roles, db: Session):
+    cargos = mapa_cargos(db)
+    return {rol: cargos.get(rol, "ADMINISTRATIVO") for rol in roles}
+
+
+def destino_por_roles(roles, db: Session) -> str:
+    categorias = categorias_por_roles(roles, db)
+    if any(categoria == "ADMINISTRATIVO" for categoria in categorias.values()):
         return "/admin"
-    if any(r in ROLES_TECNICOS for r in roles):
+    if any(categoria == "TECNICO" for categoria in categorias.values()):
         return "/operativo"
-    raise HTTPException(status_code=403, detail="Rol no habilitado")
+    raise HTTPException(status_code=403, detail="Cargo no habilitado")
 
 
 @router.post("/login")
@@ -59,23 +73,25 @@ def login(data: LoginData, db: Session = Depends(get_db)):
 
     user = db.query(models.Usuario).filter(models.Usuario.username == usuario).first()
     if user and (user.activo or "SI").upper() != "NO" and user.password == password:
-        roles = validar_roles(user.rol or "")
+        roles = validar_roles(user.rol or "", db)
         return {
             "id": user.id,
             "nombre": user.nombre,
             "usuario": user.username,
             "rol": ", ".join(roles),
             "roles": roles,
-            "redirect": destino_por_roles(roles),
+            "categorias": categorias_por_roles(roles, db),
+            "redirect": destino_por_roles(roles, db),
         }
 
     # Respaldo inicial para poder entrar y crear personal aunque la base tenga usuarios antiguos sin credenciales.
     if usuario in FALLBACK_USERS and password == DEFAULT_PASSWORD:
         session = FALLBACK_USERS[usuario].copy()
-        roles = validar_roles(session["rol"])
+        roles = validar_roles(session["rol"], db)
         session["usuario"] = usuario
         session["roles"] = roles
-        session["redirect"] = destino_por_roles(roles)
+        session["categorias"] = categorias_por_roles(roles, db)
+        session["redirect"] = destino_por_roles(roles, db)
         return session
 
     raise HTTPException(status_code=401, detail="Usuario o contrasena incorrectos")
